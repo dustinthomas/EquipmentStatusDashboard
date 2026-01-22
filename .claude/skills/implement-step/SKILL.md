@@ -1,3 +1,8 @@
+---
+description: Implement a single work unit from the units file
+argument-hint: docs/features/FEATURE-units.md [unit-number]
+---
+
 # Skill: Implement Step
 
 Implement a single work unit from the units file.

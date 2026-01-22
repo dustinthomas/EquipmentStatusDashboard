@@ -1,3 +1,8 @@
+---
+description: Verify an implemented unit and create a pull request
+argument-hint: docs/features/FEATURE-units.md [unit-number]
+---
+
 # Skill: Verify and Ship
 
 Verify an implemented unit and prepare it for merge.

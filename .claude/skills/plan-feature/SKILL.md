@@ -1,3 +1,8 @@
+---
+description: Plan a feature from a spec file, creating both plan and units files
+argument-hint: docs/features/FEATURE.md
+---
+
 # Skill: Plan Feature
 
 Plan a feature from a spec file, creating both the plan and units files.
