@@ -4,6 +4,11 @@ using Test
 using HTTP
 using JSON3
 
+# Load Genie for route testing
+using Genie
+using Genie.Router
+using Genie.Renderer.Json: json
+
 @testset "EquipmentStatusDashboard" begin
     @testset "Configuration" begin
         # Test that config files exist
@@ -17,6 +22,14 @@ using JSON3
         # Include routes to test they load without error
         include(joinpath(@__DIR__, "..", "config", "routes.jl"))
         @test true  # If we get here, routes loaded successfully
+    end
+
+    @testset "Health Endpoint" begin
+        # Test that json function returns proper response
+        response = json(Dict("status" => "ok"))
+        @test response.status == 200
+        body = JSON3.read(String(response.body))
+        @test body.status == "ok"
     end
 
     @testset "Models" begin

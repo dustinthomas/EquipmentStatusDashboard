@@ -28,6 +28,8 @@ Set up Genie project structure with proper configuration files. Create `config/`
 - [x] `app.jl` starts Genie server successfully
 - [x] `julia --project=. -e "include(\"app.jl\")"` runs without error
 
+**Fix Note (2026-01-22):** Fixed health endpoint by using `Genie.Renderer.Json.json()` instead of non-existent `Genie.Responses.json()` (Genie 5.x API). Added test coverage for the health endpoint response.
+
 **Files to create/modify:**
 - `config/env/dev.jl` - Development environment config
 - `config/env/prod.jl` - Production environment config

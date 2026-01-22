@@ -2,11 +2,11 @@
 using Genie.Router
 using Genie.Requests
 using Genie.Responses
-using JSON3
+using Genie.Renderer.Json: json
 
 # Health check endpoint - returns JSON status for monitoring
 route("/health", method = GET) do
-    Genie.Responses.json(Dict("status" => "ok"))
+    json(Dict("status" => "ok"))
 end
 
 # Root redirect to dashboard (will be protected by auth later)
