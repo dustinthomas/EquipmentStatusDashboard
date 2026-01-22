@@ -1,0 +1,247 @@
+/* QCI Equipment Status Dashboard - Theme Styles */
+
+/* ========================================
+   QCI Brand Colors
+   ======================================== */
+:root {
+    /* Primary colors */
+    --qci-dark-navy: #1E204B;
+    --qci-light-navy: #222354;
+    --qci-light-grey: #F4F5F9;
+    --qci-white: #FFFFFF;
+    --qci-body-text: #3A3D4A;
+
+    /* Status colors */
+    --status-up: #2ecc71;
+    --status-up-with-issues: #f39c12;
+    --status-maintenance: #e67e22;
+    --status-down: #e74c3c;
+
+    /* Derived colors */
+    --border-color: #e0e0e0;
+    --hover-bg: rgba(30, 32, 75, 0.05);
+}
+
+/* ========================================
+   Typography
+   ======================================== */
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap');
+
+body {
+    font-family: "Raleway", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--qci-body-text);
+    background-color: var(--qci-light-grey);
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--qci-dark-navy);
+    font-weight: 600;
+    margin-top: 0;
+}
+
+/* ========================================
+   Layout
+   ======================================== */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ========================================
+   Header / Navigation
+   ======================================== */
+.navbar {
+    background-color: var(--qci-dark-navy);
+    color: var(--qci-white);
+    padding: 15px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar a {
+    color: var(--qci-white);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.navbar a:hover {
+    background-color: var(--qci-light-navy);
+}
+
+.logo {
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+/* ========================================
+   Cards
+   ======================================== */
+.card {
+    background-color: var(--qci-white);
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* ========================================
+   Tables
+   ======================================== */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--qci-white);
+}
+
+.table th {
+    background-color: var(--qci-dark-navy);
+    color: var(--qci-white);
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 600;
+}
+
+.table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table tr:hover {
+    background-color: var(--hover-bg);
+}
+
+/* ========================================
+   Status Badges
+   ======================================== */
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-up {
+    background-color: var(--status-up);
+    color: white;
+}
+
+.status-up-with-issues {
+    background-color: var(--status-up-with-issues);
+    color: white;
+}
+
+.status-maintenance {
+    background-color: var(--status-maintenance);
+    color: white;
+}
+
+.status-down {
+    background-color: var(--status-down);
+    color: white;
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background-color: var(--qci-dark-navy);
+    color: var(--qci-white);
+}
+
+.btn-primary:hover {
+    background-color: var(--qci-light-navy);
+}
+
+.btn-secondary {
+    background-color: var(--qci-light-grey);
+    color: var(--qci-body-text);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background-color: #e8e9ed;
+}
+
+/* ========================================
+   Forms
+   ======================================== */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--qci-dark-navy);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--qci-dark-navy);
+    box-shadow: 0 0 0 3px rgba(30, 32, 75, 0.1);
+}
+
+/* ========================================
+   Footer
+   ======================================== */
+.footer {
+    background-color: var(--qci-dark-navy);
+    color: var(--qci-white);
+    padding: 20px 0;
+    text-align: center;
+    font-size: 0.875rem;
+    margin-top: 40px;
+}
+
+/* ========================================
+   Utilities
+   ======================================== */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.mt-20 { margin-top: 20px; }
+.mb-20 { margin-bottom: 20px; }
+.p-20 { padding: 20px; }

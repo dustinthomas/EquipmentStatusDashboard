@@ -1,0 +1,44 @@
+# Julia
+Manifest.toml
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# Data directory (for local development)
+/data/
+
+# Compiled
+*.o
+*.so
+
+# Temporary
+tmp/
+temp/

@@ -28,7 +28,7 @@ This is the rulebook for Claude Code sessions working in this repository.
 
 ## Coding Style & Stack
 
-- **Language:** Julia 1.9+
+- **Language:** Julia (latest stable)
 - **Framework:** Genie.jl (web framework)
 - **ORM:** SearchLight.jl (supports SQLite, PostgreSQL)
 - **Database:** SQLite (v1), migration path to PostgreSQL

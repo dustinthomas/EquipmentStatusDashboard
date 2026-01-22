@@ -1,0 +1,18 @@
+name = "EquipmentStatusDashboard"
+uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+authors = ["QCI <engineering@qci.com>"]
+version = "0.1.0"
+
+[deps]
+Genie = "c43c736e-a2d1-11e8-161f-af95117fbd1e"
+SearchLight = "340e8cb6-72eb-11e8-37ce-c97ebeb32050"
+SearchLightSQLite = "21a827c4-482a-11ea-3a19-4d2571a4bce4"
+GenieAuthentication = "3de59ee0-a182-11ea-33d2-dd91284dc14e"
+GenieAuthorisation = "0d538ce6-3b17-47bf-9e99-9c3a04cd0c86"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[compat]
+julia = "1.10"
