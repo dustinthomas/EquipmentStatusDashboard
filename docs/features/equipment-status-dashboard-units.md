@@ -17,6 +17,7 @@
 ### Unit 1.1: Genie Project Configuration
 **Status:** VERIFIED
 **Branch:** `feature/genie-config`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/1
 **Depends on:** None
 
 **Task:**
