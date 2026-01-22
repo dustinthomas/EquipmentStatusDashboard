@@ -98,6 +98,10 @@ A **Work Unit** is the smallest coherent, testable chunk of work:
 PENDING → IN_PROGRESS → IMPLEMENTED → VERIFIED → MERGED
 ```
 
+**Skills update files automatically:**
+- `/implement-step` updates units file status + plan milestones
+- `/verify-ship` updates units file + plan on milestone complete
+
 ## Session Rules
 
 **Each session = One role, One work unit**
