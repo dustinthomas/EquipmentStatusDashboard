@@ -106,8 +106,9 @@ Create the User model with SearchLight, including migration for the `users` tabl
 ---
 
 ### Unit 2.2: Tool Model and Migration
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/tool-model`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/5
 **Depends on:** 1.2
 
 **Task:**
