@@ -155,3 +155,33 @@ end
 route("/api/auth/me", method = GET) do
     AuthController.api_me()
 end
+
+# ========================================
+# Vue Frontend Routes
+# ========================================
+
+# Serve Vue app for /vue routes
+# This serves the index.html which loads Vue and handles client-side routing
+route("/vue", method = GET) do
+    auth_result = AuthHelpers.require_authentication()
+    if auth_result !== nothing
+        return auth_result
+    end
+    Genie.Renderer.respond(
+        read(joinpath(Genie.config.server_document_root, "index.html"), String),
+        :html
+    )
+end
+
+# Catch-all for Vue app sub-routes (e.g., /vue/tools/1)
+# Serves same index.html, Vue router handles the path
+route("/vue/*", method = GET) do
+    auth_result = AuthHelpers.require_authentication()
+    if auth_result !== nothing
+        return auth_result
+    end
+    Genie.Renderer.respond(
+        read(joinpath(Genie.config.server_document_root, "index.html"), String),
+        :html
+    )
+end

@@ -149,7 +149,7 @@ Create JSON API endpoint for fetching tool status history.
 ## Milestone 2: Vue App Shell
 
 ### Unit 2.1: HTML Shell & Vue Setup
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/vue-shell`
 **Depends on:** None
 
@@ -157,11 +157,11 @@ Create JSON API endpoint for fetching tool status history.
 Create the HTML shell that loads Vue and the app.
 
 **Acceptance Criteria:**
-- [ ] `public/index.html` loads Vue 3 from CDN
-- [ ] Includes existing CSS files
-- [ ] Has mount point for Vue app
-- [ ] Shows loading state while Vue initializes
-- [ ] Has `<noscript>` message for no-JS browsers
+- [x] `public/index.html` loads Vue 3 from CDN
+- [x] Includes existing CSS files
+- [x] Has mount point for Vue app
+- [x] Shows loading state while Vue initializes
+- [x] Has `<noscript>` message for no-JS browsers
 
 **Files to create:**
 - `public/index.html` - HTML shell
