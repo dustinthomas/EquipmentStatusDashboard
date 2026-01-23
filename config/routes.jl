@@ -2,6 +2,7 @@
 using Genie.Router
 using Genie.Requests
 using Genie.Responses
+using Genie.Renderer: redirect
 using Genie.Renderer.Json: json
 
 # Health check endpoint - returns JSON status for monitoring
@@ -11,7 +12,7 @@ end
 
 # Root redirect to dashboard (will be protected by auth later)
 route("/", method = GET) do
-    Genie.Responses.redirect("/dashboard")
+    redirect("/dashboard")
 end
 
 # Placeholder dashboard route (to be implemented in Unit 4.1)
