@@ -21,13 +21,13 @@ using Main.AuthHelpers: current_user
 
 # Import StatusEvent model
 include(joinpath(@__DIR__, "..", "models", "StatusEvent.jl"))
-using .StatusEvents: StatusEvent, create_status_event!
+using .StatusEvents: StatusEvent, create_status_event!, find_by_tool_id, find_by_tool_id_in_range
 
 # Import API helpers for consistent error responses
 include(joinpath(@__DIR__, "..", "lib", "api_helpers.jl"))
 using .ApiHelpers: api_success, api_error, api_bad_request, api_not_found
 
-export index, filter_table, state_display_text, api_index, api_show, api_update_status
+export index, filter_table, state_display_text, api_index, api_show, api_update_status, api_history, api_history_csv
 
 # Valid sort columns and their field mappings
 const SORT_COLUMNS = Dict(
@@ -747,6 +747,208 @@ function api_update_status()
     )
 
     api_success(Dict("tool" => tool_data))
+end
+
+"""
+    api_history()
+
+JSON API endpoint for fetching tool status history.
+GET /api/tools/:id/history
+
+Query Parameters:
+- from: Optional. Start date for filtering (ISO 8601 format)
+- to: Optional. End date for filtering (ISO 8601 format)
+
+Returns JSON array of status events ordered by created_at descending (newest first).
+Each event includes: timestamp, user name, state, issue, comment, ETA.
+
+Returns 404 if tool not found or inactive.
+"""
+function api_history()
+    # Get the tool ID from the route parameters
+    params = Genie.Router.params()
+    id_str = get(params, :id, "")
+
+    # Validate ID parameter
+    local id::Int
+    try
+        id = parse(Int, string(id_str))
+    catch
+        return api_bad_request("Invalid tool ID")
+    end
+
+    # Find the tool
+    tool = SearchLight.findone(Tool; id = id)
+
+    # Check if tool exists and is active
+    if tool === nothing
+        return api_not_found("Tool not found")
+    end
+
+    if !tool.is_active
+        return api_not_found("Tool not found")
+    end
+
+    # Get query parameters for date range filtering
+    query_params = getpayload()
+    from_date = string(get(query_params, :from, ""))
+    to_date = string(get(query_params, :to, ""))
+
+    # Fetch status events
+    local events::Vector{StatusEvent}
+    if !isempty(from_date) && !isempty(to_date)
+        events = find_by_tool_id_in_range(tool.id, from_date, to_date)
+    elseif !isempty(from_date)
+        # Only from date specified - use high end date
+        events = find_by_tool_id_in_range(tool.id, from_date, "9999-12-31T23:59:59")
+    elseif !isempty(to_date)
+        # Only to date specified - use low start date
+        events = find_by_tool_id_in_range(tool.id, "0000-01-01T00:00:00", to_date)
+    else
+        # No date range - get all events
+        events = find_by_tool_id(tool.id)
+    end
+
+    # Prepare event data for JSON response
+    event_data = [
+        Dict(
+            "id" => e.id.value,
+            "created_at" => e.created_at,
+            "created_at_formatted" => format_timestamp(e.created_at),
+            "state" => e.state,
+            "state_display" => state_display_text(e.state),
+            "state_class" => state_css_class(e.state),
+            "issue_description" => e.issue_description,
+            "comment" => e.comment,
+            "eta_to_up" => e.eta_to_up,
+            "eta_to_up_formatted" => format_timestamp(e.eta_to_up),
+            "created_by_user_id" => e.created_by_user_id.value,
+            "created_by_user_name" => get_user_name(e.created_by_user_id)
+        )
+        for e in events
+    ]
+
+    # Return JSON response with metadata
+    api_success(Dict(
+        "tool_id" => tool.id.value,
+        "tool_name" => tool.name,
+        "events" => event_data,
+        "meta" => Dict(
+            "count" => length(events),
+            "from" => from_date,
+            "to" => to_date
+        )
+    ))
+end
+
+"""
+    api_history_csv()
+
+CSV download endpoint for tool status history.
+GET /api/tools/:id/history.csv
+
+Query Parameters:
+- from: Optional. Start date for filtering (ISO 8601 format)
+- to: Optional. End date for filtering (ISO 8601 format)
+
+Returns CSV file with headers: Timestamp,User,State,Issue,Comment,ETA
+Events ordered by created_at descending (newest first).
+
+Returns 404 if tool not found or inactive.
+"""
+function api_history_csv()
+    # Get the tool ID from the route parameters
+    params = Genie.Router.params()
+    id_str = get(params, :id, "")
+
+    # Validate ID parameter
+    local id::Int
+    try
+        id = parse(Int, string(id_str))
+    catch
+        return api_bad_request("Invalid tool ID")
+    end
+
+    # Find the tool
+    tool = SearchLight.findone(Tool; id = id)
+
+    # Check if tool exists and is active
+    if tool === nothing
+        return api_not_found("Tool not found")
+    end
+
+    if !tool.is_active
+        return api_not_found("Tool not found")
+    end
+
+    # Get query parameters for date range filtering
+    query_params = getpayload()
+    from_date = string(get(query_params, :from, ""))
+    to_date = string(get(query_params, :to, ""))
+
+    # Fetch status events
+    local events::Vector{StatusEvent}
+    if !isempty(from_date) && !isempty(to_date)
+        events = find_by_tool_id_in_range(tool.id, from_date, to_date)
+    elseif !isempty(from_date)
+        events = find_by_tool_id_in_range(tool.id, from_date, "9999-12-31T23:59:59")
+    elseif !isempty(to_date)
+        events = find_by_tool_id_in_range(tool.id, "0000-01-01T00:00:00", to_date)
+    else
+        events = find_by_tool_id(tool.id)
+    end
+
+    # Build CSV content
+    csv_lines = String[]
+
+    # Header row
+    push!(csv_lines, "Timestamp,User,State,Issue,Comment,ETA")
+
+    # Data rows
+    for e in events
+        # Escape CSV fields (double quotes and wrap in quotes if needed)
+        timestamp = e.created_at
+        user_name = escape_csv_field(get_user_name(e.created_by_user_id))
+        state = e.state
+        issue = escape_csv_field(e.issue_description)
+        comment = escape_csv_field(e.comment)
+        eta = e.eta_to_up
+
+        push!(csv_lines, "$timestamp,$user_name,$state,$issue,$comment,$eta")
+    end
+
+    csv_content = join(csv_lines, "\n")
+
+    # Generate filename with tool name and date
+    safe_tool_name = replace(tool.name, r"[^a-zA-Z0-9_-]" => "_")
+    filename = "$(safe_tool_name)_history.csv"
+
+    # Return CSV response with download headers
+    return Genie.Renderer.respond(
+        csv_content,
+        200,
+        Dict(
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=\"$filename\""
+        )
+    )
+end
+
+"""
+    escape_csv_field(value::String) -> String
+
+Escape a CSV field value by wrapping in quotes and escaping internal quotes.
+"""
+function escape_csv_field(value::String)::String
+    if isempty(value)
+        return ""
+    end
+    # If contains comma, newline, or quote, wrap in quotes and escape internal quotes
+    if occursin(',', value) || occursin('\n', value) || occursin('"', value)
+        escaped = replace(value, "\"" => "\"\"")
+        return "\"$escaped\""
+    end
+    return value
 end
 
 end # module DashboardController

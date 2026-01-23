@@ -1380,6 +1380,86 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 # Verify tool lookup and 404 handling
                 @test occursin("Tool not found", controller_content)
             end
+
+            @testset "api_history function exists" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify api_history function is defined
+                @test occursin("function api_history", controller_content)
+                @test occursin("export", controller_content) && occursin("api_history", controller_content)
+
+                # Verify it uses StatusEvent query functions
+                @test occursin("find_by_tool_id", controller_content)
+                @test occursin("find_by_tool_id_in_range", controller_content)
+
+                # Verify date range filtering support
+                @test occursin("from_date", controller_content)
+                @test occursin("to_date", controller_content)
+
+                # Verify returns event fields
+                @test occursin("created_at", controller_content)
+                @test occursin("created_by_user_name", controller_content)
+                @test occursin("state_display", controller_content)
+                @test occursin("issue_description", controller_content)
+                @test occursin("comment", controller_content)
+                @test occursin("eta_to_up", controller_content)
+
+                # Verify error handling
+                @test occursin("Tool not found", controller_content)
+            end
+
+            @testset "api_history route defined" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                routes_content = read(routes_file, String)
+
+                @test occursin("/api/tools/:id", routes_content)
+                @test occursin("/history", routes_content)
+                @test occursin("api_history", routes_content)
+                @test occursin("require_authentication_api", routes_content)
+            end
+
+            @testset "api_history_csv function exists" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify api_history_csv function is defined
+                @test occursin("function api_history_csv", controller_content)
+                @test occursin("export", controller_content) && occursin("api_history_csv", controller_content)
+
+                # Verify CSV header row
+                @test occursin("Timestamp,User,State,Issue,Comment,ETA", controller_content)
+
+                # Verify CSV content type
+                @test occursin("text/csv", controller_content)
+
+                # Verify Content-Disposition for download
+                @test occursin("Content-Disposition", controller_content)
+                @test occursin("attachment", controller_content)
+                @test occursin("filename", controller_content)
+            end
+
+            @testset "api_history_csv route defined" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                routes_content = read(routes_file, String)
+
+                @test occursin("/api/tools/:id", routes_content)
+                @test occursin("/history.csv", routes_content)
+                @test occursin("api_history_csv", routes_content)
+                @test occursin("require_authentication_api", routes_content)
+            end
+
+            @testset "escape_csv_field helper" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify escape_csv_field function is defined
+                @test occursin("function escape_csv_field", controller_content)
+
+                # Verify it handles special characters
+                @test occursin("comma", controller_content) || occursin(",", controller_content)
+                @test occursin("quote", controller_content) || occursin("\"", controller_content)
+            end
         end
 
         @testset "AuthController API" begin

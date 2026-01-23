@@ -124,7 +124,7 @@ Create JSON API endpoint for updating tool status.
 ---
 
 ### Unit 1.6: Tool History API
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/vue-api-history`
 **Depends on:** 1.3
 
@@ -132,12 +132,12 @@ Create JSON API endpoint for updating tool status.
 Create JSON API endpoint for fetching tool status history.
 
 **Acceptance Criteria:**
-- [ ] `GET /api/tools/:id/history` returns JSON array of status events
-- [ ] Supports query params: `from`, `to` (date range filter)
-- [ ] Returns: timestamp, user name, state, issue, comment, ETA for each event
-- [ ] Ordered by created_at descending (newest first)
-- [ ] `GET /api/tools/:id/history.csv` returns CSV download
-- [ ] Protected by authentication (401 if not logged in)
+- [x] `GET /api/tools/:id/history` returns JSON array of status events
+- [x] Supports query params: `from`, `to` (date range filter)
+- [x] Returns: timestamp, user name, state, issue, comment, ETA for each event
+- [x] Ordered by created_at descending (newest first)
+- [x] `GET /api/tools/:id/history.csv` returns CSV download
+- [x] Protected by authentication (401 if not logged in)
 
 **Files to modify:**
 - `src/controllers/DashboardController.jl` - Add `api_history()` function
