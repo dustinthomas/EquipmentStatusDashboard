@@ -36,7 +36,7 @@ Create JSON API endpoint for listing tools with filter/sort support.
 ---
 
 ### Unit 1.2: Auth API Endpoints
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/vue-api-auth`
 **Depends on:** None
 
@@ -44,9 +44,9 @@ Create JSON API endpoint for listing tools with filter/sort support.
 Create JSON API endpoints for authentication.
 
 **Acceptance Criteria:**
-- [ ] `POST /api/auth/login` accepts JSON `{username, password}`, returns user or error
-- [ ] `POST /api/auth/logout` clears session, returns success
-- [ ] `GET /api/auth/me` returns current user info or 401
+- [x] `POST /api/auth/login` accepts JSON `{username, password}`, returns user or error
+- [x] `POST /api/auth/logout` clears session, returns success
+- [x] `GET /api/auth/me` returns current user info or 401
 
 **Files to modify:**
 - `src/controllers/AuthController.jl` - Add `api_login()`, `api_logout()`, `api_me()`
