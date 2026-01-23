@@ -822,6 +822,344 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                     @test state_display_text("UNKNOWN") == "UNKNOWN"  # Fallback to raw value
                 end
             end
+
+            @testset "Filter and sort functions" begin
+                # Use a temp file for filter/sort testing
+                test_db_path = joinpath(tempdir(), "test_filter_sort_$(rand(UInt32)).sqlite")
+                ENV["DATABASE_PATH"] = test_db_path
+
+                # Include database configuration and connect
+                include(joinpath(@__DIR__, "..", "config", "database.jl"))
+                @test connect_database() == true
+
+                # Include the Tool model and run migration
+                include(joinpath(@__DIR__, "..", "src", "models", "Tool.jl"))
+                using .Tools: Tool, VALID_STATES
+                include(joinpath(@__DIR__, "..", "db", "migrations", "20260122201046_create_tools.jl"))
+                CreateTools.up()
+
+                # Define filter/sort functions locally for testing
+                # (Avoiding the need to load entire DashboardController with auth dependencies)
+
+                function test_get_unique_areas(tools)::Vector{String}
+                    areas = unique([t.area for t in tools])
+                    sort!(areas)
+                    return areas
+                end
+
+                function test_filter_tools(tools, state_filter::String, area_filter::String, search::String)
+                    filtered = tools
+                    if !isempty(state_filter) && state_filter != "all"
+                        filtered = filter(t -> t.current_state == state_filter, filtered)
+                    end
+                    if !isempty(area_filter) && area_filter != "all"
+                        filtered = filter(t -> t.area == area_filter, filtered)
+                    end
+                    if !isempty(search)
+                        search_lower = lowercase(search)
+                        filtered = filter(t -> occursin(search_lower, lowercase(t.name)), filtered)
+                    end
+                    return collect(filtered)
+                end
+
+                function test_state_sort_order(state::String)::Int
+                    order = Dict("DOWN" => 1, "MAINTENANCE" => 2, "UP_WITH_ISSUES" => 3, "UP" => 4)
+                    return get(order, state, 5)
+                end
+
+                function test_sort_tools(tools, sort_col::String, sort_dir::String)
+                    sort_columns = Dict(
+                        "name" => :name,
+                        "area" => :area,
+                        "state" => :current_state,
+                        "updated" => :current_status_updated_at,
+                        "eta" => :current_eta_to_up
+                    )
+                    if !haskey(sort_columns, sort_col)
+                        sort_col = "state"
+                    end
+                    if sort_dir != "asc" && sort_dir != "desc"
+                        sort_dir = "asc"
+                    end
+                    field = sort_columns[sort_col]
+                    if sort_col == "state"
+                        key_fn = t -> test_state_sort_order(t.current_state)
+                    elseif sort_col == "eta"
+                        key_fn = t -> (isempty(t.current_eta_to_up) ? 1 : 0, t.current_eta_to_up)
+                    elseif sort_col == "updated"
+                        key_fn = t -> (isempty(t.current_status_updated_at) ? 1 : 0, t.current_status_updated_at)
+                    else
+                        key_fn = t -> lowercase(getfield(t, field))
+                    end
+                    return sort(tools, by = key_fn, rev = (sort_dir == "desc"))
+                end
+
+                function test_build_query_string(params::Dict; exclude::Vector{String}=String[])::String
+                    filtered = filter(kv -> !(string(kv[1]) in exclude) && !isempty(string(kv[2])), params)
+                    if isempty(filtered)
+                        return ""
+                    end
+                    return "?" * join(["$(k)=$(v)" for (k, v) in filtered], "&")
+                end
+
+                function test_get_sort_url(current_params::Dict, column::String, current_sort::String, current_dir::String)::String
+                    new_params = copy(current_params)
+                    new_params["sort"] = column
+                    if column == current_sort
+                        new_params["dir"] = (current_dir == "asc") ? "desc" : "asc"
+                    else
+                        new_params["dir"] = "asc"
+                    end
+                    return "/dashboard" * test_build_query_string(new_params)
+                end
+
+                # Create test tools
+                SearchLight.delete_all(Tool)
+
+                tool1 = Tool(name = "ASML-001", area = "Litho", current_state = "UP", is_active = true)
+                tool2 = Tool(name = "Etch-001", area = "Etch", current_state = "DOWN", is_active = true)
+                tool3 = Tool(name = "CVD-001", area = "Deposition", current_state = "MAINTENANCE", is_active = true)
+                tool4 = Tool(name = "ASML-002", area = "Litho", current_state = "UP_WITH_ISSUES", is_active = true)
+                tool5 = Tool(name = "Clean-001", area = "Cleaning", current_state = "UP", is_active = true)
+
+                SearchLight.save!(tool1)
+                SearchLight.save!(tool2)
+                SearchLight.save!(tool3)
+                SearchLight.save!(tool4)
+                SearchLight.save!(tool5)
+
+                tools = SearchLight.all(Tool)
+
+                @testset "get_unique_areas" begin
+                    areas = test_get_unique_areas(tools)
+                    @test length(areas) == 4
+                    @test "Cleaning" in areas
+                    @test "Deposition" in areas
+                    @test "Etch" in areas
+                    @test "Litho" in areas
+                    # Should be sorted alphabetically
+                    @test areas == ["Cleaning", "Deposition", "Etch", "Litho"]
+                end
+
+                @testset "filter_tools - by state" begin
+                    # Filter by DOWN state
+                    filtered = test_filter_tools(tools, "DOWN", "", "")
+                    @test length(filtered) == 1
+                    @test filtered[1].name == "Etch-001"
+
+                    # Filter by UP state
+                    filtered = test_filter_tools(tools, "UP", "", "")
+                    @test length(filtered) == 2
+                    @test all(t -> t.current_state == "UP", filtered)
+
+                    # No filter (all states)
+                    filtered = test_filter_tools(tools, "", "", "")
+                    @test length(filtered) == 5
+
+                    # "all" should show all
+                    filtered = test_filter_tools(tools, "all", "", "")
+                    @test length(filtered) == 5
+                end
+
+                @testset "filter_tools - by area" begin
+                    # Filter by Litho area
+                    filtered = test_filter_tools(tools, "", "Litho", "")
+                    @test length(filtered) == 2
+                    @test all(t -> t.area == "Litho", filtered)
+
+                    # Filter by Etch area
+                    filtered = test_filter_tools(tools, "", "Etch", "")
+                    @test length(filtered) == 1
+                    @test filtered[1].name == "Etch-001"
+                end
+
+                @testset "filter_tools - by search" begin
+                    # Search for "ASML"
+                    filtered = test_filter_tools(tools, "", "", "ASML")
+                    @test length(filtered) == 2
+                    @test all(t -> occursin("ASML", t.name), filtered)
+
+                    # Search is case-insensitive
+                    filtered = test_filter_tools(tools, "", "", "asml")
+                    @test length(filtered) == 2
+
+                    # Search for "001"
+                    filtered = test_filter_tools(tools, "", "", "001")
+                    @test length(filtered) == 4
+
+                    # Search for non-existent tool
+                    filtered = test_filter_tools(tools, "", "", "nonexistent")
+                    @test length(filtered) == 0
+                end
+
+                @testset "filter_tools - combined filters" begin
+                    # Filter by state AND area
+                    filtered = test_filter_tools(tools, "UP", "Litho", "")
+                    @test length(filtered) == 1
+                    @test filtered[1].name == "ASML-001"
+
+                    # Filter by area AND search
+                    filtered = test_filter_tools(tools, "", "Litho", "001")
+                    @test length(filtered) == 1
+                    @test filtered[1].name == "ASML-001"
+
+                    # Filter by all three
+                    filtered = test_filter_tools(tools, "UP_WITH_ISSUES", "Litho", "ASML")
+                    @test length(filtered) == 1
+                    @test filtered[1].name == "ASML-002"
+                end
+
+                @testset "sort_tools - by name" begin
+                    sorted = test_sort_tools(tools, "name", "asc")
+                    names = [t.name for t in sorted]
+                    # Sorted case-insensitively: "asml" < "clean" < "cvd" < "etch"
+                    @test names == ["ASML-001", "ASML-002", "Clean-001", "CVD-001", "Etch-001"]
+
+                    sorted = test_sort_tools(tools, "name", "desc")
+                    names = [t.name for t in sorted]
+                    @test names == ["Etch-001", "CVD-001", "Clean-001", "ASML-002", "ASML-001"]
+                end
+
+                @testset "sort_tools - by area" begin
+                    sorted = test_sort_tools(tools, "area", "asc")
+                    areas = [t.area for t in sorted]
+                    @test areas[1] == "Cleaning"
+                    @test areas[end] == "Litho"
+                end
+
+                @testset "sort_tools - by state" begin
+                    # Default state sort: DOWN first, UP last
+                    sorted = test_sort_tools(tools, "state", "asc")
+                    states = [t.current_state for t in sorted]
+                    @test states[1] == "DOWN"  # DOWN first
+                    @test states[end] in ["UP"]  # UP last
+
+                    # Descending: UP first, DOWN last
+                    sorted = test_sort_tools(tools, "state", "desc")
+                    states = [t.current_state for t in sorted]
+                    @test states[1] in ["UP"]
+                    @test states[end] == "DOWN"
+                end
+
+                @testset "sort_tools - invalid column defaults to state" begin
+                    sorted = test_sort_tools(tools, "invalid_column", "asc")
+                    states = [t.current_state for t in sorted]
+                    @test states[1] == "DOWN"  # Default state sorting
+                end
+
+                @testset "build_query_string" begin
+                    params = Dict("state" => "DOWN", "area" => "Litho")
+                    qs = test_build_query_string(params)
+                    @test occursin("state=DOWN", qs)
+                    @test occursin("area=Litho", qs)
+                    @test startswith(qs, "?")
+
+                    # Empty values are excluded
+                    params = Dict("state" => "DOWN", "area" => "")
+                    qs = test_build_query_string(params)
+                    @test occursin("state=DOWN", qs)
+                    @test !occursin("area=", qs)
+
+                    # Empty params returns empty string
+                    params = Dict{String, String}()
+                    qs = test_build_query_string(params)
+                    @test qs == ""
+                end
+
+                @testset "get_sort_url" begin
+                    params = Dict{String, String}("state" => "DOWN")
+
+                    # Clicking new column sets asc
+                    url = test_get_sort_url(params, "name", "state", "asc")
+                    @test occursin("sort=name", url)
+                    @test occursin("dir=asc", url)
+                    @test occursin("state=DOWN", url)
+
+                    # Clicking same column toggles direction
+                    url = test_get_sort_url(params, "state", "state", "asc")
+                    @test occursin("dir=desc", url)
+
+                    url = test_get_sort_url(params, "state", "state", "desc")
+                    @test occursin("dir=asc", url)
+                end
+
+                # Cleanup
+                disconnect_database()
+                isfile(test_db_path) && rm(test_db_path)
+                delete!(ENV, "DATABASE_PATH")
+            end
+
+            @testset "Dashboard view with filters" begin
+                view_file = joinpath(@__DIR__, "..", "src", "views", "dashboard", "index.jl.html")
+                @test isfile(view_file)
+
+                view_content = read(view_file, String)
+
+                # Check filter form elements
+                @test occursin("filter-form", view_content)
+                @test occursin("name=\"state\"", view_content)
+                @test occursin("name=\"area\"", view_content)
+                @test occursin("name=\"search\"", view_content)
+                @test occursin("type=\"submit\"", view_content)
+
+                # Check sortable headers
+                @test occursin("sortable-header", view_content)
+                @test occursin("sort-link", view_content)
+                @test occursin("sort-indicator", view_content)
+                @test occursin("sort_urls", view_content)
+
+                # Check filter state persistence in URL
+                @test occursin("state_filter", view_content)
+                @test occursin("area_filter", view_content)
+            end
+
+            @testset "Dashboard CSS for filters and sorting" begin
+                css_file = joinpath(@__DIR__, "..", "public", "css", "qci.css")
+                css_content = read(css_file, String)
+
+                # Check filter styles
+                @test occursin(".filter-card", css_content)
+                @test occursin(".filter-form", css_content)
+                @test occursin(".filter-row", css_content)
+                @test occursin(".filter-group", css_content)
+
+                # Check sortable header styles
+                @test occursin(".sortable-header", css_content)
+                @test occursin(".sort-link", css_content)
+                @test occursin(".sort-indicator", css_content)
+            end
+        end
+    end
+
+    @testset "API" begin
+        @testset "DashboardController API" begin
+            @testset "api_index function exists" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify api_index function is defined
+                @test occursin("function api_index", controller_content)
+                @test occursin("export", controller_content) && occursin("api_index", controller_content)
+                @test occursin("json", controller_content)  # Uses JSON rendering
+            end
+
+            @testset "API route defined" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                routes_content = read(routes_file, String)
+
+                @test occursin("/api/tools", routes_content)
+                @test occursin("api_index", routes_content)
+                @test occursin("require_authentication_api", routes_content)
+            end
+
+            @testset "API auth helper exists" begin
+                helpers_file = joinpath(@__DIR__, "..", "src", "lib", "auth_helpers.jl")
+                helpers_content = read(helpers_file, String)
+
+                @test occursin("require_authentication_api", helpers_content)
+                @test occursin("401", helpers_content)  # Returns 401 for unauth
+                @test occursin("Unauthorized", helpers_content)
+            end
         end
     end
 

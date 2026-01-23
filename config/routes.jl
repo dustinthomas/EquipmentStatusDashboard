@@ -40,6 +40,16 @@ route("/dashboard", method = GET) do
     DashboardController.index()
 end
 
+# Dashboard filter endpoint for HTMX partial updates
+# Returns just the table HTML without the full page layout
+route("/dashboard/filter", method = GET) do
+    auth_result = AuthHelpers.require_authentication()
+    if auth_result !== nothing
+        return auth_result
+    end
+    DashboardController.filter_table()
+end
+
 # ========================================
 # Authentication Routes
 # ========================================
@@ -57,4 +67,18 @@ end
 # Logout
 route("/logout", method = GET) do
     AuthController.logout()
+end
+
+# ========================================
+# JSON API Routes
+# ========================================
+
+# API: Get tools list with filter/sort support
+# Protected: requires authentication (returns 401 if not logged in)
+route("/api/tools", method = GET) do
+    auth_result = AuthHelpers.require_authentication_api()
+    if auth_result !== nothing
+        return auth_result
+    end
+    DashboardController.api_index()
 end

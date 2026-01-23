@@ -267,7 +267,7 @@ Create main dashboard showing all active tools with current status. Display as t
 ---
 
 ### Unit 4.2: Dashboard Sorting and Filtering
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/dashboard-filters`
 **Depends on:** 4.1
 
@@ -275,12 +275,12 @@ Create main dashboard showing all active tools with current status. Display as t
 Add sorting and filtering to dashboard. Sortable columns: name, state, area, last updated, ETA. Filters: state dropdown, area dropdown, text search.
 
 **Acceptance Criteria:**
-- [ ] Clicking column header sorts by that column
-- [ ] Sort direction toggles (asc/desc)
-- [ ] State filter dropdown works
-- [ ] Area filter dropdown works
-- [ ] Text search filters by tool name
-- [ ] Filters persist in URL query params
+- [x] Clicking column header sorts by that column
+- [x] Sort direction toggles (asc/desc)
+- [x] State filter dropdown works
+- [x] Area filter dropdown works
+- [x] Text search filters by tool name
+- [x] Filters persist in URL query params
 
 **Files to create/modify:**
 - `src/controllers/DashboardController.jl` - Add filter/sort logic
