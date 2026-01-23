@@ -399,6 +399,212 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             isfile(test_db_path) && rm(test_db_path)
             delete!(ENV, "DATABASE_PATH")
         end
+
+        @testset "StatusEvent Model" begin
+            # Use a temp file for model testing
+            test_db_path = joinpath(tempdir(), "test_status_event_model_$(rand(UInt32)).sqlite")
+            ENV["DATABASE_PATH"] = test_db_path
+
+            # Include database configuration and connect
+            include(joinpath(@__DIR__, "..", "config", "database.jl"))
+            @test connect_database() == true
+
+            # Include models
+            include(joinpath(@__DIR__, "..", "src", "models", "User.jl"))
+            include(joinpath(@__DIR__, "..", "src", "models", "Tool.jl"))
+            include(joinpath(@__DIR__, "..", "src", "models", "StatusEvent.jl"))
+            using .Users: User
+            using .Tools: Tool
+            using .StatusEvents: StatusEvent, VALID_STATES, validate_state, find_by_tool_id,
+                                 find_by_tool_id_in_range, find_latest_by_tool_id, find_by_user_id,
+                                 create_status_event!
+
+            # Run migrations to create all tables
+            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122195602_create_users.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122201046_create_tools.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122203749_create_status_events.jl"))
+            CreateUsers.up()
+            CreateTools.up()
+            CreateStatusEvents.up()
+
+            # Create test user and tool for FK references
+            test_user = User(
+                username = "testoperator",
+                password_hash = "hash123",
+                name = "Test Operator",
+                role = "operator"
+            )
+            SearchLight.save!(test_user)
+
+            test_tool = Tool(
+                name = "Test-Tool-001",
+                area = "TestArea",
+                bay = "Bay 1",
+                criticality = "medium"
+            )
+            SearchLight.save!(test_tool)
+
+            @testset "State validation" begin
+                @test validate_state("UP") == true
+                @test validate_state("UP_WITH_ISSUES") == true
+                @test validate_state("MAINTENANCE") == true
+                @test validate_state("DOWN") == true
+                @test validate_state("UNKNOWN") == false
+                @test validate_state("") == false
+                @test validate_state("up") == false  # Case-sensitive
+            end
+
+            @testset "VALID_STATES constant" begin
+                @test "UP" in VALID_STATES
+                @test "UP_WITH_ISSUES" in VALID_STATES
+                @test "MAINTENANCE" in VALID_STATES
+                @test "DOWN" in VALID_STATES
+                @test length(VALID_STATES) == 4
+            end
+
+            @testset "StatusEvent creation and retrieval" begin
+                # Create a status event
+                event = StatusEvent(
+                    tool_id = test_tool.id,
+                    state = "DOWN",
+                    issue_description = "Vacuum pump failure",
+                    comment = "Scheduled PM for tomorrow",
+                    eta_to_up = "2026-01-23T08:00:00",
+                    created_by_user_id = test_user.id
+                )
+
+                # Save to database
+                saved_event = SearchLight.save!(event)
+                @test saved_event.id.value !== nothing
+
+                # Retrieve from database
+                retrieved = SearchLight.findone(StatusEvent; id = saved_event.id.value)
+                @test retrieved !== nothing
+                @test retrieved.tool_id.value == test_tool.id.value
+                @test retrieved.state == "DOWN"
+                @test retrieved.issue_description == "Vacuum pump failure"
+                @test retrieved.comment == "Scheduled PM for tomorrow"
+                @test retrieved.eta_to_up == "2026-01-23T08:00:00"
+                @test retrieved.created_by_user_id.value == test_user.id.value
+                @test !isempty(retrieved.created_at)
+            end
+
+            @testset "create_status_event! helper" begin
+                event = create_status_event!(
+                    test_tool.id,
+                    test_user.id,
+                    "MAINTENANCE";
+                    issue_description = "Scheduled PM",
+                    comment = "Weekly maintenance"
+                )
+
+                @test event.id.value !== nothing
+                @test event.state == "MAINTENANCE"
+                @test event.issue_description == "Scheduled PM"
+
+                # Test that ETA is cleared when state is UP
+                up_event = create_status_event!(
+                    test_tool.id,
+                    test_user.id,
+                    "UP";
+                    eta_to_up = "2026-01-24T10:00:00"  # Should be ignored
+                )
+                @test up_event.eta_to_up == ""
+            end
+
+            @testset "Invalid state in create_status_event!" begin
+                @test_throws ErrorException create_status_event!(
+                    test_tool.id,
+                    test_user.id,
+                    "INVALID_STATE"
+                )
+            end
+
+            @testset "find_by_tool_id" begin
+                # Clear existing events
+                SearchLight.delete_all(StatusEvent)
+
+                # Create multiple events for the same tool
+                create_status_event!(test_tool.id, test_user.id, "UP")
+                sleep(0.01)  # Small delay to ensure different timestamps
+                create_status_event!(test_tool.id, test_user.id, "DOWN"; issue_description = "Issue 1")
+                sleep(0.01)
+                create_status_event!(test_tool.id, test_user.id, "UP")
+
+                events = find_by_tool_id(test_tool.id)
+                @test length(events) == 3
+                # Should be ordered by created_at descending (newest first)
+                @test events[1].state == "UP"  # Most recent
+                @test events[3].state == "UP"  # Oldest
+            end
+
+            @testset "find_latest_by_tool_id" begin
+                latest = find_latest_by_tool_id(test_tool.id)
+                @test latest !== nothing
+                @test latest.state == "UP"  # Most recent event
+            end
+
+            @testset "find_by_user_id" begin
+                events = find_by_user_id(test_user.id)
+                @test length(events) >= 3  # At least the 3 we created
+                @test all(e -> e.created_by_user_id.value == test_user.id.value, events)
+            end
+
+            @testset "StatusEvent fields default values" begin
+                event = StatusEvent()
+                @test event.state == "UP"
+                @test event.issue_description == ""
+                @test event.comment == ""
+                @test event.eta_to_up == ""
+                @test !isempty(event.created_at)  # Should have default timestamp
+            end
+
+            @testset "find_by_tool_id_in_range" begin
+                # Clear and create events with specific timestamps
+                SearchLight.delete_all(StatusEvent)
+
+                # Events in range
+                event1 = StatusEvent(
+                    tool_id = test_tool.id,
+                    state = "DOWN",
+                    created_by_user_id = test_user.id,
+                    created_at = "2026-01-15T10:00:00"
+                )
+                SearchLight.save!(event1)
+
+                event2 = StatusEvent(
+                    tool_id = test_tool.id,
+                    state = "UP",
+                    created_by_user_id = test_user.id,
+                    created_at = "2026-01-20T10:00:00"
+                )
+                SearchLight.save!(event2)
+
+                # Event outside range
+                event3 = StatusEvent(
+                    tool_id = test_tool.id,
+                    state = "MAINTENANCE",
+                    created_by_user_id = test_user.id,
+                    created_at = "2026-01-10T10:00:00"
+                )
+                SearchLight.save!(event3)
+
+                # Query for range 2026-01-14 to 2026-01-21
+                events = find_by_tool_id_in_range(
+                    test_tool.id,
+                    "2026-01-14T00:00:00",
+                    "2026-01-21T23:59:59"
+                )
+
+                @test length(events) == 2
+                @test all(e -> e.state in ["DOWN", "UP"], events)
+            end
+
+            # Cleanup
+            disconnect_database()
+            isfile(test_db_path) && rm(test_db_path)
+            delete!(ENV, "DATABASE_PATH")
+        end
     end
 
     @testset "Controllers" begin
