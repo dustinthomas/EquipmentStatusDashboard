@@ -14,6 +14,10 @@ using Logging
 # These are loaded when the app starts
 using Main: authenticate_user, login!, logout!, current_user, is_authenticated
 
+# Import auth helpers for redirect URL handling
+# AuthHelpers is loaded by routes.jl before this controller
+using Main.AuthHelpers: get_redirect_url
+
 """
     login_form()
 
@@ -65,7 +69,9 @@ function login()
     # Login successful - create session
     if login!(user, session)
         @info "User logged in successfully" username=user.username user_id=user.id.value
-        return redirect("/dashboard")
+        # Redirect to originally requested page, or dashboard by default
+        redirect_url = get_redirect_url("/dashboard")
+        return redirect(redirect_url)
     else
         @error "Failed to create session for user" username=user.username
         return html(:auth, :login; layout = :app,
