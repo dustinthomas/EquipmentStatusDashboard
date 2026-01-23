@@ -129,8 +129,108 @@ ENV["SEARCHLIGHT_ENV"] = "test"
     end
 
     @testset "Models" begin
-        # TODO: Add model tests
-        @test true  # Placeholder
+        @testset "User Model" begin
+            # Use a temp file for model testing
+            test_db_path = joinpath(tempdir(), "test_user_model_$(rand(UInt32)).sqlite")
+            ENV["DATABASE_PATH"] = test_db_path
+
+            # Include database configuration and connect
+            include(joinpath(@__DIR__, "..", "config", "database.jl"))
+            @test connect_database() == true
+
+            # Include the User model
+            include(joinpath(@__DIR__, "..", "src", "models", "User.jl"))
+            using .Users: User, VALID_ROLES, validate_role, is_admin, find_by_username
+
+            # Run migration to create users table
+            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122195602_create_users.jl"))
+            CreateUsers.up()
+
+            @testset "Role validation" begin
+                @test validate_role("admin") == true
+                @test validate_role("operator") == true
+                @test validate_role("user") == false
+                @test validate_role("invalid") == false
+                @test validate_role("") == false
+            end
+
+            @testset "VALID_ROLES constant" begin
+                @test "admin" in VALID_ROLES
+                @test "operator" in VALID_ROLES
+                @test length(VALID_ROLES) == 2
+            end
+
+            @testset "User creation and retrieval" begin
+                # Create a test user
+                user = User(
+                    username = "testuser",
+                    password_hash = "hashed_password_123",
+                    name = "Test User",
+                    role = "operator",
+                    is_active = true
+                )
+
+                # Save to database
+                saved_user = SearchLight.save!(user)
+                @test saved_user.id.value !== nothing
+
+                # Retrieve from database using findone
+                retrieved = SearchLight.findone(User; id = saved_user.id.value)
+                @test retrieved !== nothing
+                @test retrieved.username == "testuser"
+                @test retrieved.name == "Test User"
+                @test retrieved.role == "operator"
+                @test retrieved.is_active == true
+            end
+
+            @testset "Find by username" begin
+                # Create another user for this test
+                admin_user = User(
+                    username = "adminuser",
+                    password_hash = "admin_hash_456",
+                    name = "Admin User",
+                    role = "admin",
+                    is_active = true
+                )
+                SearchLight.save!(admin_user)
+
+                # Find by username
+                found = find_by_username("adminuser")
+                @test found !== nothing
+                @test found.username == "adminuser"
+                @test found.role == "admin"
+
+                # Test non-existent user
+                not_found = find_by_username("nonexistent")
+                @test not_found === nothing
+            end
+
+            @testset "is_admin helper" begin
+                admin = User(role = "admin")
+                operator = User(role = "operator")
+
+                @test is_admin(admin) == true
+                @test is_admin(operator) == false
+            end
+
+            @testset "User fields" begin
+                user = User()
+                # Check default values
+                @test user.username == ""
+                @test user.password_hash == ""
+                @test user.name == ""
+                @test user.role == "operator"
+                @test user.is_active == true
+                @test user.last_login_at == ""
+                @test !isempty(user.created_at)  # Should have default timestamp
+                @test !isempty(user.updated_at)  # Should have default timestamp
+            end
+
+            # Cleanup
+            disconnect_database()
+            isfile(test_db_path) && rm(test_db_path)
+            delete!(ENV, "DATABASE_PATH")
+        end
     end
 
     @testset "Controllers" begin
