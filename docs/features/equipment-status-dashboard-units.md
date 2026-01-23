@@ -61,7 +61,7 @@ Configure SearchLight ORM with SQLite adapter. Create database configuration fil
 ---
 
 ### Unit 1.3: Base Layout Template
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/base-layout`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/3
 **Depends on:** 1.1
