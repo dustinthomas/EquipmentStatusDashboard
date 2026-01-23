@@ -196,8 +196,9 @@ Integrate GenieAuthentication with the User model. Configure session handling, p
 ---
 
 ### Unit 3.2: Login/Logout Routes and Views
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/login-views`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/9
 **Depends on:** 3.1, 1.3
 
 **Task:**
