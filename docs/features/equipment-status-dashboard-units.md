@@ -40,7 +40,7 @@ Set up Genie project structure with proper configuration files. Create `config/`
 ---
 
 ### Unit 1.2: SearchLight Database Configuration
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/searchlight-config`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/2
 **Depends on:** 1.1
