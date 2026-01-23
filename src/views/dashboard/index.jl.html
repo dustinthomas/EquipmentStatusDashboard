@@ -1,6 +1,6 @@
 <div class="page-header">
     <h1>Equipment Status Dashboard</h1>
-    <p>$(string(tool_count)) of $(string(total_count)) tools shown</p>
+    <p><%= string(tool_count) %> of <%= string(total_count) %> tools shown</p>
 </div>
 
 <div class="card filter-card">
@@ -28,7 +28,7 @@
             </div>
             <div class="filter-group filter-group-search">
                 <label for="search" class="filter-label">Search</label>
-                <input type="text" name="search" id="search" class="form-input filter-input" placeholder="Search by name..." value="$(search)" />
+                <input type="text" name="search" id="search" class="form-input filter-input" placeholder="Search by name..." value="<%= search %>" />
             </div>
             <div class="filter-group filter-group-buttons">
                 <button type="submit" class="btn btn-primary">Apply</button>
@@ -36,10 +36,10 @@
             </div>
         </div>
         <% if !isempty(sort_col) && sort_col != "state" %>
-            <input type="hidden" name="sort" value="$(sort_col)" />
+            <input type="hidden" name="sort" value="<%= sort_col %>" />
         <% end %>
         <% if !isempty(sort_dir) && sort_dir != "asc" %>
-            <input type="hidden" name="dir" value="$(sort_dir)" />
+            <input type="hidden" name="dir" value="<%= sort_dir %>" />
         <% end %>
     </form>
 </div>
@@ -53,43 +53,53 @@
                 <thead>
                     <tr>
                         <th class="sortable-header">
-                            <a href="$(sort_urls["name"])" class="sort-link $(sort_col == "name" ? "active" : "")">
+                            <% name_url = get(sort_urls, "name", "/dashboard?sort=name") %>
+                            <% name_active = sort_col == "name" ? "active" : "" %>
+                            <a href="<%= name_url %>" class="sort-link <%= name_active %>">
                                 Name
                                 <% if sort_col == "name" %>
-                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                    <span class="sort-indicator"><%= sort_dir == "asc" ? "▲" : "▼" %></span>
                                 <% end %>
                             </a>
                         </th>
                         <th class="sortable-header">
-                            <a href="$(sort_urls["area"])" class="sort-link $(sort_col == "area" ? "active" : "")">
+                            <% area_url = get(sort_urls, "area", "/dashboard?sort=area") %>
+                            <% area_active = sort_col == "area" ? "active" : "" %>
+                            <a href="<%= area_url %>" class="sort-link <%= area_active %>">
                                 Area
                                 <% if sort_col == "area" %>
-                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                    <span class="sort-indicator"><%= sort_dir == "asc" ? "▲" : "▼" %></span>
                                 <% end %>
                             </a>
                         </th>
                         <th class="sortable-header">
-                            <a href="$(sort_urls["state"])" class="sort-link $(sort_col == "state" ? "active" : "")">
+                            <% state_url = get(sort_urls, "state", "/dashboard?sort=state") %>
+                            <% state_active = sort_col == "state" ? "active" : "" %>
+                            <a href="<%= state_url %>" class="sort-link <%= state_active %>">
                                 Status
                                 <% if sort_col == "state" %>
-                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                    <span class="sort-indicator"><%= sort_dir == "asc" ? "▲" : "▼" %></span>
                                 <% end %>
                             </a>
                         </th>
                         <th>Issue</th>
                         <th class="sortable-header">
-                            <a href="$(sort_urls["eta"])" class="sort-link $(sort_col == "eta" ? "active" : "")">
+                            <% eta_url = get(sort_urls, "eta", "/dashboard?sort=eta") %>
+                            <% eta_active = sort_col == "eta" ? "active" : "" %>
+                            <a href="<%= eta_url %>" class="sort-link <%= eta_active %>">
                                 ETA to Up
                                 <% if sort_col == "eta" %>
-                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                    <span class="sort-indicator"><%= sort_dir == "asc" ? "▲" : "▼" %></span>
                                 <% end %>
                             </a>
                         </th>
                         <th class="sortable-header">
-                            <a href="$(sort_urls["updated"])" class="sort-link $(sort_col == "updated" ? "active" : "")">
+                            <% updated_url = get(sort_urls, "updated", "/dashboard?sort=updated") %>
+                            <% updated_active = sort_col == "updated" ? "active" : "" %>
+                            <a href="<%= updated_url %>" class="sort-link <%= updated_active %>">
                                 Last Updated
                                 <% if sort_col == "updated" %>
-                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                    <span class="sort-indicator"><%= sort_dir == "asc" ? "▲" : "▼" %></span>
                                 <% end %>
                             </a>
                         </th>
