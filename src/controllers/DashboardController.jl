@@ -5,6 +5,7 @@ module DashboardController
 
 using Genie
 using Genie.Renderer.Html: html
+using Genie.Renderer.Json: json
 using Genie.Requests: getpayload
 using SearchLight
 using Logging
@@ -18,7 +19,7 @@ using .Users: User
 # Import auth helpers
 using Main.AuthHelpers: current_user
 
-export index, state_display_text
+export index, filter_table, state_display_text, api_index
 
 # Valid sort columns and their field mappings
 const SORT_COLUMNS = Dict(
@@ -322,6 +323,7 @@ function index()
         "DOWN" => "Down"
     )
 
+    # Use Genie's symbol-based routing (loads from app/resources/)
     html(:dashboard, :index;
          layout = :app,
          page_title = "Dashboard",
@@ -338,6 +340,209 @@ function index()
          sort_col = string(sort_col),
          sort_dir = string(sort_dir),
          sort_urls = sort_urls)
+end
+
+"""
+    prepare_table_data(; state_filter::String="", area_filter::String="", search::String="", sort_col::String=DEFAULT_SORT_COLUMN, sort_dir::String=DEFAULT_SORT_DIR)
+
+Shared helper to prepare tool data for table rendering.
+Returns a tuple of (tool_data, tool_count, total_count, sort_urls).
+"""
+function prepare_table_data(; state_filter::String="", area_filter::String="", search::String="", sort_col::String=DEFAULT_SORT_COLUMN, sort_dir::String=DEFAULT_SORT_DIR)
+    # Get all active tools
+    all_tools = find_active_tools()
+
+    # Apply filters
+    filtered_tools = filter_tools(all_tools, state_filter, area_filter, search)
+
+    # Apply sorting
+    sorted_tools = sort_tools(filtered_tools, sort_col, sort_dir)
+
+    # Build current params dict for URL building
+    current_params = Dict{String, String}()
+    if !isempty(state_filter)
+        current_params["state"] = state_filter
+    end
+    if !isempty(area_filter)
+        current_params["area"] = area_filter
+    end
+    if !isempty(search)
+        current_params["search"] = search
+    end
+    if !isempty(sort_col) && sort_col != DEFAULT_SORT_COLUMN
+        current_params["sort"] = sort_col
+    end
+    if !isempty(sort_dir) && sort_dir != DEFAULT_SORT_DIR
+        current_params["dir"] = sort_dir
+    end
+
+    # Generate sort URLs for column headers (use filter endpoint for HTMX)
+    sort_urls = Dict(
+        "name" => "/dashboard/filter?" * build_sort_query(current_params, "name", sort_col, sort_dir),
+        "area" => "/dashboard/filter?" * build_sort_query(current_params, "area", sort_col, sort_dir),
+        "state" => "/dashboard/filter?" * build_sort_query(current_params, "state", sort_col, sort_dir),
+        "updated" => "/dashboard/filter?" * build_sort_query(current_params, "updated", sort_col, sort_dir),
+        "eta" => "/dashboard/filter?" * build_sort_query(current_params, "eta", sort_col, sort_dir)
+    )
+
+    # Prepare tool data for the view
+    tool_data = [
+        Dict(
+            :id => t.id.value,
+            :name => t.name,
+            :area => t.area,
+            :state => t.current_state,
+            :state_display => state_display_text(t.current_state),
+            :state_class => state_css_class(t.current_state),
+            :issue => truncate_text(t.current_issue_description),
+            :full_issue => t.current_issue_description,
+            :eta => format_timestamp(t.current_eta_to_up),
+            :eta_raw => t.current_eta_to_up,
+            :updated_at => format_timestamp(t.current_status_updated_at),
+            :updated_by => get_user_name(t.current_status_updated_by_user_id)
+        )
+        for t in sorted_tools
+    ]
+
+    return (tool_data, length(sorted_tools), length(all_tools), sort_urls, sort_col, sort_dir)
+end
+
+"""
+    build_sort_query(params::Dict, column::String, current_sort::String, current_dir::String) -> String
+
+Build query string for sort link. Toggles direction if clicking same column.
+"""
+function build_sort_query(params::Dict, column::String, current_sort::String, current_dir::String)::String
+    query_parts = String[]
+
+    # Add filter params
+    if haskey(params, "state")
+        push!(query_parts, "state=$(params["state"])")
+    end
+    if haskey(params, "area")
+        push!(query_parts, "area=$(params["area"])")
+    end
+    if haskey(params, "search")
+        push!(query_parts, "search=$(params["search"])")
+    end
+
+    # Add sort column
+    push!(query_parts, "sort=$column")
+
+    # Toggle direction if clicking same column
+    if column == current_sort
+        new_dir = (current_dir == "asc") ? "desc" : "asc"
+    else
+        new_dir = "asc"
+    end
+    push!(query_parts, "dir=$new_dir")
+
+    return join(query_parts, "&")
+end
+
+"""
+    filter_table()
+
+Return just the table HTML for HTMX partial updates.
+GET /dashboard/filter
+"""
+function filter_table()
+    # Get query parameters
+    params = getpayload()
+    state_filter = string(get(params, :state, ""))
+    area_filter = string(get(params, :area, ""))
+    search = string(get(params, :search, ""))
+    sort_col = string(get(params, :sort, DEFAULT_SORT_COLUMN))
+    sort_dir = string(get(params, :dir, DEFAULT_SORT_DIR))
+
+    # Prepare table data
+    (tool_data, tool_count, total_count, sort_urls, sort_col, sort_dir) = prepare_table_data(
+        state_filter = state_filter,
+        area_filter = area_filter,
+        search = search,
+        sort_col = sort_col,
+        sort_dir = sort_dir
+    )
+
+    # Return just the table partial without layout (loads from app/resources/)
+    html(:dashboard, :table;
+         layout = nothing,
+         tools = tool_data,
+         tool_count = tool_count,
+         total_count = total_count,
+         sort_col = sort_col,
+         sort_dir = sort_dir,
+         sort_urls = sort_urls)
+end
+
+"""
+    api_index()
+
+JSON API endpoint for listing tools with filter/sort support.
+GET /api/tools
+
+Query Parameters:
+- state: Filter by state (UP, UP_WITH_ISSUES, MAINTENANCE, DOWN)
+- area: Filter by area
+- search: Search by name (case-insensitive)
+- sort: Sort column (name, area, state, updated, eta)
+- dir: Sort direction (asc, desc)
+
+Returns JSON array of tool objects.
+"""
+function api_index()
+    # Get query parameters
+    params = getpayload()
+    state_filter = string(get(params, :state, ""))
+    area_filter = string(get(params, :area, ""))
+    search = string(get(params, :search, ""))
+    sort_col = string(get(params, :sort, DEFAULT_SORT_COLUMN))
+    sort_dir = string(get(params, :dir, DEFAULT_SORT_DIR))
+
+    # Get all active tools
+    all_tools = find_active_tools()
+
+    # Get unique areas for filter dropdown (before filtering)
+    areas = get_unique_areas(all_tools)
+
+    # Apply filters
+    filtered_tools = filter_tools(all_tools, state_filter, area_filter, search)
+
+    # Apply sorting
+    sorted_tools = sort_tools(filtered_tools, sort_col, sort_dir)
+
+    # Prepare tool data for JSON response
+    tool_data = [
+        Dict(
+            "id" => t.id.value,
+            "name" => t.name,
+            "area" => t.area,
+            "bay" => t.bay,
+            "criticality" => t.criticality,
+            "state" => t.current_state,
+            "state_display" => state_display_text(t.current_state),
+            "state_class" => state_css_class(t.current_state),
+            "issue_description" => t.current_issue_description,
+            "comment" => t.current_comment,
+            "eta_to_up" => t.current_eta_to_up,
+            "eta_to_up_formatted" => format_timestamp(t.current_eta_to_up),
+            "status_updated_at" => t.current_status_updated_at,
+            "status_updated_at_formatted" => format_timestamp(t.current_status_updated_at),
+            "status_updated_by" => get_user_name(t.current_status_updated_by_user_id)
+        )
+        for t in sorted_tools
+    ]
+
+    # Return JSON response with metadata
+    json(Dict(
+        "tools" => tool_data,
+        "meta" => Dict(
+            "total" => length(all_tools),
+            "filtered" => length(sorted_tools),
+            "areas" => areas,
+            "states" => VALID_STATES
+        )
+    ))
 end
 
 end # module DashboardController

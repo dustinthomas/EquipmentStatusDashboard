@@ -1131,6 +1131,38 @@ ENV["SEARCHLIGHT_ENV"] = "test"
         end
     end
 
+    @testset "API" begin
+        @testset "DashboardController API" begin
+            @testset "api_index function exists" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify api_index function is defined
+                @test occursin("function api_index", controller_content)
+                @test occursin("export", controller_content) && occursin("api_index", controller_content)
+                @test occursin("json", controller_content)  # Uses JSON rendering
+            end
+
+            @testset "API route defined" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                routes_content = read(routes_file, String)
+
+                @test occursin("/api/tools", routes_content)
+                @test occursin("api_index", routes_content)
+                @test occursin("require_authentication_api", routes_content)
+            end
+
+            @testset "API auth helper exists" begin
+                helpers_file = joinpath(@__DIR__, "..", "src", "lib", "auth_helpers.jl")
+                helpers_content = read(helpers_file, String)
+
+                @test occursin("require_authentication_api", helpers_content)
+                @test occursin("401", helpers_content)  # Returns 401 for unauth
+                @test occursin("Unauthorized", helpers_content)
+            end
+        end
+    end
+
     @testset "Authentication" begin
         @testset "AuthCore - Password Hashing" begin
             # Include only the AuthCore module (no Genie dependencies)

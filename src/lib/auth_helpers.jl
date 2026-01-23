@@ -5,6 +5,7 @@ module AuthHelpers
 
 using Genie
 using Genie.Renderer: redirect
+using Genie.Renderer.Json: json
 using Genie.Requests: getrequest
 using GenieSession
 using Logging
@@ -140,6 +141,53 @@ function require_authentication()
 end
 
 """
+    require_authentication_api() -> Union{Nothing, HTTP.Messages.Response}
+
+Check if the user is authenticated for API requests.
+Returns JSON 401 Unauthorized if not authenticated.
+
+Returns nothing if authenticated, or a JSON error response if not.
+
+Usage in route:
+```julia
+route("/api/tools", method = GET) do
+    auth_result = require_authentication_api()
+    if auth_result !== nothing
+        return auth_result
+    end
+    # ... rest of route handler
+end
+```
+"""
+function require_authentication_api()
+    session = get_session()
+
+    # Check session timeout first
+    timeout_seconds = get(ENV, "SESSION_TIMEOUT", "28800") |> x -> parse(Int, x)
+    if !check_session_timeout(session, timeout_seconds)
+        @info "Session expired, clearing authentication"
+        Main.logout!(session)
+        return Genie.Renderer.respond(
+            json(Dict("error" => "Session expired")),
+            401,
+            Dict("Content-Type" => "application/json")
+        )
+    end
+
+    # Check if authenticated
+    if !Main.is_authenticated(session)
+        @debug "Unauthenticated API access attempt" path=get_current_path()
+        return Genie.Renderer.respond(
+            json(Dict("error" => "Unauthorized")),
+            401,
+            Dict("Content-Type" => "application/json")
+        )
+    end
+
+    return nothing
+end
+
+"""
     require_admin() -> Union{Nothing, HTTP.Messages.Response}
 
 Check if the user is an admin. If not authenticated, redirect to login.
@@ -213,7 +261,7 @@ function is_admin()::Bool
 end
 
 export get_session, store_redirect_url, get_redirect_url, get_current_path
-export check_session_timeout, require_authentication, require_admin
+export check_session_timeout, require_authentication, require_authentication_api, require_admin
 export current_user, is_authenticated, is_admin
 export REDIRECT_URL_KEY
 
