@@ -1,22 +1,98 @@
 <div class="page-header">
     <h1>Equipment Status Dashboard</h1>
-    <p>$(string(tool_count)) active tools</p>
+    <p>$(string(tool_count)) of $(string(total_count)) tools shown</p>
+</div>
+
+<div class="card filter-card">
+    <form method="GET" action="/dashboard" class="filter-form">
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="state" class="filter-label">Status</label>
+                <select name="state" id="state" class="form-select filter-select">
+                    <option value="">All Statuses</option>
+                    <% [
+                        option(value=s, selected=(s == state_filter ? "selected" : nothing), get(state_labels, s, s))
+                        for s in states
+                    ] %>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="area" class="filter-label">Area</label>
+                <select name="area" id="area" class="form-select filter-select">
+                    <option value="">All Areas</option>
+                    <% [
+                        option(value=a, selected=(a == area_filter ? "selected" : nothing), a)
+                        for a in areas
+                    ] %>
+                </select>
+            </div>
+            <div class="filter-group filter-group-search">
+                <label for="search" class="filter-label">Search</label>
+                <input type="text" name="search" id="search" class="form-input filter-input" placeholder="Search by name..." value="$(search)" />
+            </div>
+            <div class="filter-group filter-group-buttons">
+                <button type="submit" class="btn btn-primary">Apply</button>
+                <a href="/dashboard" class="btn btn-secondary">Clear</a>
+            </div>
+        </div>
+        <% if !isempty(sort_col) && sort_col != "state" %>
+            <input type="hidden" name="sort" value="$(sort_col)" />
+        <% end %>
+        <% if !isempty(sort_dir) && sort_dir != "asc" %>
+            <input type="hidden" name="dir" value="$(sort_dir)" />
+        <% end %>
+    </form>
 </div>
 
 <div class="card dashboard-card">
     <% if isempty(tools) %>
-        <p class="text-center">No tools found.</p>
+        <p class="text-center p-20">No tools match the current filters.</p>
     <% else %>
         <div class="table-container">
             <table class="table dashboard-table">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Area</th>
-                        <th>Status</th>
+                        <th class="sortable-header">
+                            <a href="$(sort_urls["name"])" class="sort-link $(sort_col == "name" ? "active" : "")">
+                                Name
+                                <% if sort_col == "name" %>
+                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                <% end %>
+                            </a>
+                        </th>
+                        <th class="sortable-header">
+                            <a href="$(sort_urls["area"])" class="sort-link $(sort_col == "area" ? "active" : "")">
+                                Area
+                                <% if sort_col == "area" %>
+                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                <% end %>
+                            </a>
+                        </th>
+                        <th class="sortable-header">
+                            <a href="$(sort_urls["state"])" class="sort-link $(sort_col == "state" ? "active" : "")">
+                                Status
+                                <% if sort_col == "state" %>
+                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                <% end %>
+                            </a>
+                        </th>
                         <th>Issue</th>
-                        <th>ETA to Up</th>
-                        <th>Last Updated</th>
+                        <th class="sortable-header">
+                            <a href="$(sort_urls["eta"])" class="sort-link $(sort_col == "eta" ? "active" : "")">
+                                ETA to Up
+                                <% if sort_col == "eta" %>
+                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                <% end %>
+                            </a>
+                        </th>
+                        <th class="sortable-header">
+                            <a href="$(sort_urls["updated"])" class="sort-link $(sort_col == "updated" ? "active" : "")">
+                                Last Updated
+                                <% if sort_col == "updated" %>
+                                    <span class="sort-indicator">$(sort_dir == "asc" ? "▲" : "▼")</span>
+                                <% end %>
+                            </a>
+                        </th>
                         <th>Updated By</th>
                     </tr>
                 </thead>
