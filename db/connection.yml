@@ -1,0 +1,25 @@
+# SearchLight Database Configuration
+# Environment is automatically determined by SEARCHLIGHT_ENV or GENIE_ENV
+
+env: ENV["GENIE_ENV"]
+
+dev:
+  adapter: SQLite
+  database: db/qci_status_dev.sqlite
+  config:
+    log_queries: true
+    log_level: debug
+
+prod:
+  adapter: SQLite
+  database: db/qci_status.sqlite
+  config:
+    log_queries: false
+    log_level: info
+
+test:
+  adapter: SQLite
+  database: db/qci_status_test.sqlite
+  config:
+    log_queries: false
+    log_level: warn
