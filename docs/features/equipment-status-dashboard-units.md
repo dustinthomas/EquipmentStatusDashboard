@@ -105,7 +105,7 @@ Create the User model with SearchLight, including migration for the `users` tabl
 ---
 
 ### Unit 2.2: Tool Model and Migration
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/tool-model`
 **Depends on:** 1.2
 
@@ -113,16 +113,16 @@ Create the User model with SearchLight, including migration for the `users` tabl
 Create the Tool model with denormalized current status fields. Fields: id, name, area, bay, criticality, is_active, current_state, current_issue_description, current_comment, current_eta_to_up, current_status_updated_at, current_status_updated_by_user_id, created_at, updated_at.
 
 **Acceptance Criteria:**
-- [ ] `src/models/Tool.jl` exists with all required fields
-- [ ] Migration creates `tools` table with correct schema
-- [ ] Migration runs successfully
-- [ ] Can create/read Tool records in REPL
-- [ ] State validation (only valid states allowed)
-- [ ] Criticality validation (low/medium/high)
+- [x] `src/models/Tool.jl` exists with all required fields
+- [x] Migration creates `tools` table with correct schema
+- [x] Migration runs successfully
+- [x] Can create/read Tool records in REPL
+- [x] State validation (only valid states allowed)
+- [x] Criticality validation (low/medium/high)
 
 **Files to create/modify:**
 - `src/models/Tool.jl` - Tool model definition
-- `db/migrations/TIMESTAMP_create_tools.jl` - Migration file
+- `db/migrations/20260122201046_create_tools.jl` - Migration file
 
 ---
 
