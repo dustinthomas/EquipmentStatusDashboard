@@ -55,6 +55,7 @@ const VALID_ROLES = ["admin", "operator"]
 Migrations are in `db/migrations/` with timestamp prefixes:
 ```
 20260122195602_create_users.jl  # User table
+20260122201046_create_tools.jl  # Tool table
 ```
 
 ## Where to Find Things

@@ -231,6 +231,174 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             isfile(test_db_path) && rm(test_db_path)
             delete!(ENV, "DATABASE_PATH")
         end
+
+        @testset "Tool Model" begin
+            # Use a temp file for model testing
+            test_db_path = joinpath(tempdir(), "test_tool_model_$(rand(UInt32)).sqlite")
+            ENV["DATABASE_PATH"] = test_db_path
+
+            # Include database configuration and connect
+            include(joinpath(@__DIR__, "..", "config", "database.jl"))
+            @test connect_database() == true
+
+            # Include the Tool model
+            include(joinpath(@__DIR__, "..", "src", "models", "Tool.jl"))
+            using .Tools: Tool, VALID_STATES, VALID_CRITICALITIES, validate_state, validate_criticality,
+                          find_active_tools, find_by_area, find_down_tools
+
+            # Run migration to create tools table
+            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122201046_create_tools.jl"))
+            CreateTools.up()
+
+            @testset "State validation" begin
+                @test validate_state("UP") == true
+                @test validate_state("UP_WITH_ISSUES") == true
+                @test validate_state("MAINTENANCE") == true
+                @test validate_state("DOWN") == true
+                @test validate_state("UNKNOWN") == false
+                @test validate_state("") == false
+                @test validate_state("up") == false  # Case-sensitive
+            end
+
+            @testset "Criticality validation" begin
+                @test validate_criticality("critical") == true
+                @test validate_criticality("high") == true
+                @test validate_criticality("medium") == true
+                @test validate_criticality("low") == true
+                @test validate_criticality("CRITICAL") == false  # Case-sensitive
+                @test validate_criticality("urgent") == false
+                @test validate_criticality("") == false
+            end
+
+            @testset "VALID_STATES constant" begin
+                @test "UP" in VALID_STATES
+                @test "UP_WITH_ISSUES" in VALID_STATES
+                @test "MAINTENANCE" in VALID_STATES
+                @test "DOWN" in VALID_STATES
+                @test length(VALID_STATES) == 4
+            end
+
+            @testset "VALID_CRITICALITIES constant" begin
+                @test "critical" in VALID_CRITICALITIES
+                @test "high" in VALID_CRITICALITIES
+                @test "medium" in VALID_CRITICALITIES
+                @test "low" in VALID_CRITICALITIES
+                @test length(VALID_CRITICALITIES) == 4
+            end
+
+            @testset "Tool creation and retrieval" begin
+                # Create a test tool
+                tool = Tool(
+                    name = "ASML-001",
+                    area = "Litho",
+                    bay = "Bay 1",
+                    criticality = "critical",
+                    is_active = true,
+                    current_state = "UP"
+                )
+
+                # Save to database
+                saved_tool = SearchLight.save!(tool)
+                @test saved_tool.id.value !== nothing
+
+                # Retrieve from database
+                retrieved = SearchLight.findone(Tool; id = saved_tool.id.value)
+                @test retrieved !== nothing
+                @test retrieved.name == "ASML-001"
+                @test retrieved.area == "Litho"
+                @test retrieved.bay == "Bay 1"
+                @test retrieved.criticality == "critical"
+                @test retrieved.is_active == true
+                @test retrieved.current_state == "UP"
+            end
+
+            @testset "Tool with status fields" begin
+                # Create tool with status information
+                tool = Tool(
+                    name = "Etch-002",
+                    area = "Etch",
+                    bay = "Bay 2",
+                    criticality = "high",
+                    is_active = true,
+                    current_state = "DOWN",
+                    current_issue_description = "PM required",
+                    current_comment = "Scheduled maintenance",
+                    current_eta_to_up = "2026-01-23T08:00:00"
+                )
+
+                saved = SearchLight.save!(tool)
+                retrieved = SearchLight.findone(Tool; id = saved.id.value)
+
+                @test retrieved.current_state == "DOWN"
+                @test retrieved.current_issue_description == "PM required"
+                @test retrieved.current_comment == "Scheduled maintenance"
+                @test retrieved.current_eta_to_up == "2026-01-23T08:00:00"
+            end
+
+            @testset "Find active tools" begin
+                # Clear and create fresh tools
+                SearchLight.delete_all(Tool)
+
+                tool1 = Tool(name = "Tool-A", area = "Area1", is_active = true)
+                tool2 = Tool(name = "Tool-B", area = "Area1", is_active = true)
+                tool3 = Tool(name = "Tool-C", area = "Area2", is_active = false)  # Inactive
+
+                SearchLight.save!(tool1)
+                SearchLight.save!(tool2)
+                SearchLight.save!(tool3)
+
+                active = find_active_tools()
+                @test length(active) == 2
+                @test all(t -> t.is_active, active)
+            end
+
+            @testset "Find by area" begin
+                # Already have tools from previous test
+                area1_tools = find_by_area("Area1")
+                @test length(area1_tools) == 2
+                @test all(t -> t.area == "Area1", area1_tools)
+            end
+
+            @testset "Find down tools" begin
+                # Clear and create fresh tools
+                SearchLight.delete_all(Tool)
+
+                tool_up = Tool(name = "Tool-Up", area = "Test", current_state = "UP", is_active = true)
+                tool_down1 = Tool(name = "Tool-Down1", area = "Test", current_state = "DOWN", is_active = true)
+                tool_down2 = Tool(name = "Tool-Down2", area = "Test", current_state = "DOWN", is_active = true)
+                tool_down_inactive = Tool(name = "Tool-Inactive", area = "Test", current_state = "DOWN", is_active = false)
+
+                SearchLight.save!(tool_up)
+                SearchLight.save!(tool_down1)
+                SearchLight.save!(tool_down2)
+                SearchLight.save!(tool_down_inactive)
+
+                down_tools = find_down_tools()
+                @test length(down_tools) == 2  # Only active DOWN tools
+                @test all(t -> t.current_state == "DOWN" && t.is_active, down_tools)
+            end
+
+            @testset "Tool fields default values" begin
+                tool = Tool()
+                # Check default values
+                @test tool.name == ""
+                @test tool.area == ""
+                @test tool.bay == ""
+                @test tool.criticality == "medium"
+                @test tool.is_active == true
+                @test tool.current_state == "UP"
+                @test tool.current_issue_description == ""
+                @test tool.current_comment == ""
+                @test tool.current_eta_to_up == ""
+                @test !isempty(tool.created_at)  # Should have default timestamp
+                @test !isempty(tool.updated_at)  # Should have default timestamp
+            end
+
+            # Cleanup
+            disconnect_database()
+            isfile(test_db_path) && rm(test_db_path)
+            delete!(ENV, "DATABASE_PATH")
+        end
     end
 
     @testset "Controllers" begin
