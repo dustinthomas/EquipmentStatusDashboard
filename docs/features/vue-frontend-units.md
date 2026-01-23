@@ -149,7 +149,7 @@ Create JSON API endpoint for fetching tool status history.
 ## Milestone 2: Vue App Shell
 
 ### Unit 2.1: HTML Shell & Vue Setup
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/vue-shell`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/19
 **Depends on:** None

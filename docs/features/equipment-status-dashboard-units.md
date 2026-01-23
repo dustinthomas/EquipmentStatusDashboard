@@ -273,8 +273,9 @@ Create main dashboard showing all active tools with current status. Display as t
 ---
 
 ### Unit 4.2: Dashboard Sorting and Filtering
-**Status:** IMPLEMENTED
-**Branch:** `feature/dashboard-filters`
+**Status:** MERGED
+**Branch:** `feature/dashboard-view` (included in Unit 4.1 PR)
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/11
 **Depends on:** 4.1
 
 **Task:**
@@ -288,10 +289,12 @@ Add sorting and filtering to dashboard. Sortable columns: name, state, area, las
 - [x] Text search filters by tool name
 - [x] Filters persist in URL query params
 
-**Files to create/modify:**
-- `src/controllers/DashboardController.jl` - Add filter/sort logic
-- `src/views/dashboard/index.jl.html` - Add filter UI
-- `public/js/dashboard.js` - Client-side sorting (optional)
+**Note:** This functionality was implemented as part of Unit 4.1 (PR #11) rather than as a separate unit.
+
+**Files modified:**
+- `src/controllers/DashboardController.jl` - Filter/sort logic
+- `app/resources/dashboard/views/index.jl.html` - Filter UI with HTMX
+- `app/resources/dashboard/views/table.jl.html` - Table partial for HTMX updates
 
 ---
 
