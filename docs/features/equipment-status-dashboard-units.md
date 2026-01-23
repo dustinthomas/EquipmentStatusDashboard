@@ -151,8 +151,9 @@ Create the StatusEvent model for audit trail. Fields: id, tool_id (FK), state, i
 ---
 
 ### Unit 2.4: Seed Data
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/seed-data`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/7
 **Depends on:** 2.1, 2.2, 2.3
 
 **Task:**
