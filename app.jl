@@ -36,6 +36,17 @@ else
     @warn "Environment config not found: $env_file, using defaults"
 end
 
+# Load initializers
+const initializers_dir = joinpath(@__DIR__, "config", "initializers")
+if isdir(initializers_dir)
+    for init_file in readdir(initializers_dir; join=true)
+        if endswith(init_file, ".jl")
+            @info "Loading initializer: $init_file"
+            include(init_file)
+        end
+    end
+end
+
 # Load routes
 const routes_file = joinpath(@__DIR__, "config", "routes.jl")
 if isfile(routes_file)

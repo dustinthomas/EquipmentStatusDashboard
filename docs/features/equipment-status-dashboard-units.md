@@ -40,7 +40,7 @@ Set up Genie project structure with proper configuration files. Create `config/`
 ---
 
 ### Unit 1.2: SearchLight Database Configuration
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/searchlight-config`
 **Depends on:** 1.1
 
@@ -48,10 +48,10 @@ Set up Genie project structure with proper configuration files. Create `config/`
 Configure SearchLight ORM with SQLite adapter. Create database configuration file and connection setup.
 
 **Acceptance Criteria:**
-- [ ] `db/connection.yml` or `config/database.jl` exists with SQLite config
-- [ ] SearchLight can connect to SQLite database
-- [ ] Database file created at configurable path (env var `DATABASE_PATH`)
-- [ ] Connection tested successfully in REPL
+- [x] `db/connection.yml` or `config/database.jl` exists with SQLite config
+- [x] SearchLight can connect to SQLite database
+- [x] Database file created at configurable path (env var `DATABASE_PATH`)
+- [x] Connection tested successfully in REPL
 
 **Files to create/modify:**
 - `config/database.jl` - SearchLight configuration
