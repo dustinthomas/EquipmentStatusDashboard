@@ -174,7 +174,7 @@ Create the HTML shell that loads Vue and the app.
 ---
 
 ### Unit 2.2: Authentication UI
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/vue-auth-ui`
 **Depends on:** 1.2, 2.1
 
@@ -182,12 +182,12 @@ Create the HTML shell that loads Vue and the app.
 Implement login form and auth state management in Vue.
 
 **Acceptance Criteria:**
-- [ ] Login form with username/password fields
-- [ ] Submit calls `/api/auth/login`
-- [ ] Shows error messages on failed login
-- [ ] Successful login redirects to dashboard
-- [ ] Logout button calls `/api/auth/logout`
-- [ ] App checks `/api/auth/me` on load to restore session
+- [x] Login form with username/password fields
+- [x] Submit calls `/api/auth/login`
+- [x] Shows error messages on failed login
+- [x] Successful login redirects to dashboard
+- [x] Logout button calls `/api/auth/logout`
+- [x] App checks `/api/auth/me` on load to restore session
 
 **Files to modify:**
 - `public/js/app.js` - Add auth state, login component, methods
