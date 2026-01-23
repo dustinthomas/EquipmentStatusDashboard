@@ -174,7 +174,7 @@ Create seed script with initial admin user and sample tools. Admin user: usernam
 ## Milestone 3: Authentication
 
 ### Unit 3.1: GenieAuthentication Setup
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/auth-setup`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/8
 **Depends on:** 2.1
