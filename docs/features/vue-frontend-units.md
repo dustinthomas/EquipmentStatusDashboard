@@ -36,8 +36,9 @@ Create JSON API endpoint for listing tools with filter/sort support.
 ---
 
 ### Unit 1.2: Auth API Endpoints
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/vue-api-auth`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/13
 **Depends on:** None
 
 **Task:**
