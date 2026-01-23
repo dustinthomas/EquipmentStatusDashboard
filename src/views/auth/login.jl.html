@@ -1,0 +1,49 @@
+<div class="login-page">
+    <div class="login-container">
+        <div class="login-card card">
+            <div class="login-header">
+                <h1>Equipment Status Dashboard</h1>
+                <p>Sign in to continue</p>
+            </div>
+
+            <% if @isset(:error_message) && @vars(:error_message) !== nothing %>
+                <div class="alert alert-error">
+                    <%= @vars(:error_message) %>
+                </div>
+            <% end %>
+
+            <form action="/login" method="POST" class="login-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="form-input"
+                        placeholder="Enter your username"
+                        required
+                        autofocus
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-input"
+                        placeholder="Enter your password"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Sign In
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

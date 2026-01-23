@@ -196,19 +196,20 @@ Integrate GenieAuthentication with the User model. Configure session handling, p
 ---
 
 ### Unit 3.2: Login/Logout Routes and Views
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/login-views`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/9
 **Depends on:** 3.1, 1.3
 
 **Task:**
 Create login page with username/password form, and logout functionality. Style with QCI branding.
 
 **Acceptance Criteria:**
-- [ ] `GET /login` renders login form
-- [ ] `POST /login` authenticates and redirects to dashboard
-- [ ] `GET /logout` clears session and redirects to login
-- [ ] Invalid credentials show error message (generic, not specific)
-- [ ] Login page styled with QCI branding
+- [x] `GET /login` renders login form
+- [x] `POST /login` authenticates and redirects to dashboard
+- [x] `GET /logout` clears session and redirects to login
+- [x] Invalid credentials show error message (generic, not specific)
+- [x] Login page styled with QCI branding
 
 **Files to create/modify:**
 - `src/controllers/AuthController.jl` - Login/logout handlers
