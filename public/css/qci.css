@@ -1,0 +1,101 @@
+/* QCI Equipment Status Dashboard - Main Styles */
+/* This file imports the theme and adds layout-specific styles */
+
+/* Import base theme with QCI branding */
+@import url('qci-theme.css');
+
+/* ========================================
+   Main Layout Styles
+   ======================================== */
+
+/* Navbar layout */
+.navbar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-links {
+    display: flex;
+    gap: 8px;
+}
+
+.nav-links a {
+    color: var(--qci-white);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.nav-links a:hover {
+    background-color: var(--qci-light-navy);
+}
+
+/* Main content area */
+.main-content {
+    min-height: calc(100vh - 200px);
+    padding: 30px 0;
+}
+
+/* Page header */
+.page-header {
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    margin-bottom: 8px;
+}
+
+.page-header p {
+    color: #666;
+    margin: 0;
+}
+
+/* ========================================
+   Flash Messages / Alerts
+   ======================================== */
+.alert {
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa8;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+/* ========================================
+   Additional Utility Classes
+   ======================================== */
+.flex { display: flex; }
+.flex-between { justify-content: space-between; }
+.flex-center { justify-content: center; }
+.items-center { align-items: center; }
+.gap-10 { gap: 10px; }
+.gap-20 { gap: 20px; }
+
+.mt-10 { margin-top: 10px; }
+.mt-30 { margin-top: 30px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-30 { margin-bottom: 30px; }

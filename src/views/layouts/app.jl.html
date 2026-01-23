@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><% if @isset(:page_title) %><%= @vars(:page_title) %> - <% end %>QCI Equipment Status</title>
+
+    <!-- Google Fonts - Raleway -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- QCI Theme Styles -->
+    <link rel="stylesheet" href="/css/qci.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="container navbar-content">
+            <a href="/dashboard" class="logo">QCI Equipment Status</a>
+            <div class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <% if @isset(:current_user) && @vars(:current_user) !== nothing %>
+                    <% if @vars(:current_user).role == "admin" %>
+                        <a href="/admin/tools">Admin</a>
+                    <% end %>
+                    <a href="/logout">Logout</a>
+                <% else %>
+                    <a href="/login">Login</a>
+                <% end %>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <% @yield %>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; <%= Dates.year(Dates.now()) %> QCI. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

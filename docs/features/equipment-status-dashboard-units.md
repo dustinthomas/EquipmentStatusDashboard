@@ -61,18 +61,19 @@ Configure SearchLight ORM with SQLite adapter. Create database configuration fil
 ---
 
 ### Unit 1.3: Base Layout Template
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/base-layout`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/3
 **Depends on:** 1.1
 
 **Task:**
 Create the base HTML layout template with QCI branding placeholder. Include Raleway font, basic navigation structure, and footer.
 
 **Acceptance Criteria:**
-- [ ] `src/views/layouts/app.jl.html` exists with valid HTML5 structure
-- [ ] Includes `<head>` with Raleway font from Google Fonts
-- [ ] Has placeholder nav bar and footer with QCI copyright
-- [ ] Renders without errors
+- [x] `src/views/layouts/app.jl.html` exists with valid HTML5 structure
+- [x] Includes `<head>` with Raleway font from Google Fonts
+- [x] Has placeholder nav bar and footer with QCI copyright
+- [x] Renders without errors
 
 **Files to create/modify:**
 - `src/views/layouts/app.jl.html` - Main layout template
