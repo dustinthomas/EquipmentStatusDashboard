@@ -174,7 +174,7 @@ Create the HTML shell that loads Vue and the app.
 ---
 
 ### Unit 2.2: Authentication UI
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/vue-auth-ui`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/20
 **Depends on:** 1.2, 2.1
