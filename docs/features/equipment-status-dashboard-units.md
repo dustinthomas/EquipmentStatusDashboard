@@ -219,7 +219,7 @@ Create login page with username/password form, and logout functionality. Style w
 ---
 
 ### Unit 3.3: Route Protection Middleware
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/route-protection`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/10
 **Depends on:** 3.2
