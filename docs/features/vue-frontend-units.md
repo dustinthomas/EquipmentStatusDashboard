@@ -56,7 +56,7 @@ Create JSON API endpoints for authentication.
 ---
 
 ### Unit 1.3: API Error Handling
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/vue-api-errors`
 **Depends on:** 1.1, 1.2
 
@@ -64,9 +64,9 @@ Create JSON API endpoints for authentication.
 Standardize API error responses and add CORS headers if needed.
 
 **Acceptance Criteria:**
-- [ ] All API errors return consistent JSON format `{error: "message"}`
-- [ ] 401 for unauthenticated, 403 for unauthorized, 400 for bad input
-- [ ] Content-Type is application/json for all API responses
+- [x] All API errors return consistent JSON format `{error: "message"}`
+- [x] 401 for unauthenticated, 403 for unauthorized, 400 for bad input
+- [x] Content-Type is application/json for all API responses
 
 **Files to modify:**
 - `src/lib/api_helpers.jl` - Create helper functions

@@ -19,6 +19,10 @@ using Main: authenticate_user, login!, logout!, current_user, is_authenticated
 # AuthHelpers is loaded by routes.jl before this controller
 using Main.AuthHelpers: get_redirect_url
 
+# Import API helpers for consistent error responses
+include(joinpath(@__DIR__, "..", "lib", "api_helpers.jl"))
+using .ApiHelpers: api_success, api_error, api_unauthorized, api_bad_request
+
 """
     login_form()
 
@@ -117,20 +121,12 @@ function api_login()
         jsonpayload()
     catch e
         @warn "Failed to parse JSON payload" exception=e
-        return Genie.Renderer.respond(
-            json(Dict("error" => "Invalid JSON payload")),
-            400,
-            Dict("Content-Type" => "application/json")
-        )
+        return api_bad_request("Invalid JSON payload")
     end
 
     # Handle case where jsonpayload returns nothing
     if payload === nothing
-        return Genie.Renderer.respond(
-            json(Dict("error" => "Invalid JSON payload")),
-            400,
-            Dict("Content-Type" => "application/json")
-        )
+        return api_bad_request("Invalid JSON payload")
     end
 
     # Get credentials from JSON
@@ -140,11 +136,7 @@ function api_login()
     # Validate input
     if isempty(username) || isempty(password)
         @warn "API login attempt with empty credentials"
-        return Genie.Renderer.respond(
-            json(Dict("error" => "Username and password are required")),
-            400,
-            Dict("Content-Type" => "application/json")
-        )
+        return api_bad_request("Username and password are required")
     end
 
     # Authenticate user
@@ -152,17 +144,13 @@ function api_login()
 
     if user === nothing
         @warn "API failed login attempt" username=username
-        return Genie.Renderer.respond(
-            json(Dict("error" => "Invalid username or password")),
-            401,
-            Dict("Content-Type" => "application/json")
-        )
+        return api_unauthorized("Invalid username or password")
     end
 
     # Login successful - create session
     if login!(user, session)
         @info "API user logged in successfully" username=user.username user_id=user.id.value
-        return json(Dict(
+        return api_success(Dict(
             "user" => Dict(
                 "id" => user.id.value,
                 "username" => user.username,
@@ -172,11 +160,7 @@ function api_login()
         ))
     else
         @error "API failed to create session for user" username=user.username
-        return Genie.Renderer.respond(
-            json(Dict("error" => "Login failed. Please try again.")),
-            500,
-            Dict("Content-Type" => "application/json")
-        )
+        return api_error("Login failed. Please try again.")
     end
 end
 
@@ -198,7 +182,7 @@ function api_logout()
 
     logout!(session)
 
-    return json(Dict("success" => true))
+    return api_success(Dict("success" => true))
 end
 
 """
@@ -213,24 +197,16 @@ function api_me()
 
     # Check if authenticated
     if !is_authenticated(session)
-        return Genie.Renderer.respond(
-            json(Dict("error" => "Not authenticated")),
-            401,
-            Dict("Content-Type" => "application/json")
-        )
+        return api_unauthorized("Not authenticated")
     end
 
     user = current_user(session)
 
     if user === nothing
-        return Genie.Renderer.respond(
-            json(Dict("error" => "Not authenticated")),
-            401,
-            Dict("Content-Type" => "application/json")
-        )
+        return api_unauthorized("Not authenticated")
     end
 
-    return json(Dict(
+    return api_success(Dict(
         "user" => Dict(
             "id" => user.id.value,
             "username" => user.username,

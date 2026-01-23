@@ -1132,6 +1132,137 @@ ENV["SEARCHLIGHT_ENV"] = "test"
     end
 
     @testset "API" begin
+        @testset "ApiHelpers module" begin
+            @testset "api_helpers.jl file exists" begin
+                helpers_file = joinpath(@__DIR__, "..", "src", "lib", "api_helpers.jl")
+                @test isfile(helpers_file)
+
+                # Verify key functions are defined
+                helpers_content = read(helpers_file, String)
+                @test occursin("module ApiHelpers", helpers_content)
+                @test occursin("api_success", helpers_content)
+                @test occursin("api_error", helpers_content)
+                @test occursin("api_unauthorized", helpers_content)
+                @test occursin("api_forbidden", helpers_content)
+                @test occursin("api_not_found", helpers_content)
+                @test occursin("api_bad_request", helpers_content)
+            end
+
+            @testset "API helper functions" begin
+                # Include the API helpers module
+                include(joinpath(@__DIR__, "..", "src", "lib", "api_helpers.jl"))
+                using .ApiHelpers: api_success, api_error, api_unauthorized, api_forbidden,
+                                   api_not_found, api_bad_request
+
+                # Helper function to get header value from Genie response
+                function get_header(response, name)
+                    for (k, v) in response.headers
+                        if lowercase(k) == lowercase(name)
+                            return v
+                        end
+                    end
+                    return nothing
+                end
+
+                # Helper function to extract JSON from Genie response body
+                # The response body contains the full HTTP response text, so we extract the JSON part
+                function extract_json(response)
+                    body_str = String(response.body)
+                    # Find the JSON object (starts with { and ends with })
+                    json_start = findlast('{', body_str)
+                    json_end = findlast('}', body_str)
+                    if json_start !== nothing && json_end !== nothing
+                        return JSON3.read(body_str[json_start:json_end])
+                    end
+                    return nothing
+                end
+
+                # Test api_success returns correct status and content type
+                response = api_success(Dict("data" => "test"))
+                @test response.status == 200
+                @test startswith(get_header(response, "Content-Type"), "application/json")
+                body = extract_json(response)
+                @test body.data == "test"
+
+                # Test api_success with custom status
+                response = api_success(Dict("created" => true), status=201)
+                @test response.status == 201
+
+                # Test api_error returns correct format
+                response = api_error("Something went wrong")
+                @test response.status == 500
+                @test startswith(get_header(response, "Content-Type"), "application/json")
+                body = extract_json(response)
+                @test body.error == "Something went wrong"
+
+                # Test api_error with custom status
+                response = api_error("Custom error", status=418)
+                @test response.status == 418
+
+                # Test api_unauthorized
+                response = api_unauthorized()
+                @test response.status == 401
+                body = extract_json(response)
+                @test body.error == "Unauthorized"
+
+                response = api_unauthorized("Session expired")
+                body = extract_json(response)
+                @test body.error == "Session expired"
+
+                # Test api_forbidden
+                response = api_forbidden()
+                @test response.status == 403
+                body = extract_json(response)
+                @test body.error == "Forbidden"
+
+                response = api_forbidden("Admin access required")
+                body = extract_json(response)
+                @test body.error == "Admin access required"
+
+                # Test api_not_found
+                response = api_not_found()
+                @test response.status == 404
+                body = extract_json(response)
+                @test body.error == "Not found"
+
+                response = api_not_found("Tool not found")
+                body = extract_json(response)
+                @test body.error == "Tool not found"
+
+                # Test api_bad_request
+                response = api_bad_request()
+                @test response.status == 400
+                body = extract_json(response)
+                @test body.error == "Bad request"
+
+                response = api_bad_request("Invalid JSON")
+                body = extract_json(response)
+                @test body.error == "Invalid JSON"
+            end
+
+            @testset "Controllers use ApiHelpers" begin
+                # Check DashboardController uses ApiHelpers
+                dashboard_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                dashboard_content = read(dashboard_file, String)
+                @test occursin("using .ApiHelpers", dashboard_content)
+                @test occursin("api_success", dashboard_content)
+
+                # Check AuthController uses ApiHelpers
+                auth_file = joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl")
+                auth_content = read(auth_file, String)
+                @test occursin("using .ApiHelpers", auth_content)
+                @test occursin("api_success", auth_content)
+                @test occursin("api_bad_request", auth_content)
+                @test occursin("api_unauthorized", auth_content)
+
+                # Check auth_helpers uses ApiHelpers
+                helpers_file = joinpath(@__DIR__, "..", "src", "lib", "auth_helpers.jl")
+                helpers_content = read(helpers_file, String)
+                @test occursin("using .ApiHelpers", helpers_content)
+                @test occursin("api_unauthorized", helpers_content)
+            end
+        end
+
         @testset "DashboardController API" begin
             @testset "api_index function exists" begin
                 controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
@@ -1213,13 +1344,10 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 # Verify logout returns success
                 @test occursin("\"success\" => true", controller_content)
 
-                # Verify error responses use proper HTTP codes
-                @test occursin("400", controller_content)  # Bad request
-                @test occursin("401", controller_content)  # Unauthorized
-                @test occursin("500", controller_content)  # Server error
-
-                # Verify error format
-                @test occursin("\"error\"", controller_content)
+                # Verify error responses use api_helpers (consistent error handling)
+                @test occursin("api_bad_request", controller_content)  # 400 Bad request
+                @test occursin("api_unauthorized", controller_content)  # 401 Unauthorized
+                @test occursin("api_error", controller_content)  # 500 Server error
             end
 
             @testset "Auth API input validation" begin
