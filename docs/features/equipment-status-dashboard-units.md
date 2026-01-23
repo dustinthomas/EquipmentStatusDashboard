@@ -84,19 +84,20 @@ Create the base HTML layout template with QCI branding placeholder. Include Rale
 ## Milestone 2: Data Models
 
 ### Unit 2.1: User Model and Migration
-**Status:** PENDING
+**Status:** MERGED
 **Branch:** `feature/user-model`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/4
 **Depends on:** 1.2
 
 **Task:**
 Create the User model with SearchLight, including migration for the `users` table. Fields: id, username, password_hash, name, role, is_active, last_login_at, created_at, updated_at.
 
 **Acceptance Criteria:**
-- [ ] `src/models/User.jl` exists with all required fields
-- [ ] Migration creates `users` table with correct schema
-- [ ] Migration runs successfully: `SearchLight.Migration.up()`
-- [ ] Can create/read User records in REPL
-- [ ] Role validation (only "admin" or "user" allowed)
+- [x] `src/models/User.jl` exists with all required fields ✓
+- [x] Migration creates `users` table with correct schema ✓
+- [x] Migration runs successfully: `SearchLight.Migration.up()` ✓
+- [x] Can create/read User records in REPL ✓
+- [x] Role validation (only "admin" or "operator" allowed) ✓
 
 **Files to create/modify:**
 - `src/models/User.jl` - User model definition
