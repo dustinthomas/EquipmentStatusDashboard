@@ -198,7 +198,7 @@ Implement login form and auth state management in Vue.
 ## Milestone 3: Dashboard Implementation
 
 ### Unit 3.1: Tool Table Component
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/vue-dashboard-table`
 **Depends on:** 1.1, 2.1
 
@@ -206,12 +206,12 @@ Implement login form and auth state management in Vue.
 Implement the main tools table with data fetching.
 
 **Acceptance Criteria:**
-- [ ] Fetches tools from `/api/tools` on mount
-- [ ] Displays table with all columns (Name, Area, Status, Issue, ETA, Updated, Updated By)
-- [ ] Status badges with correct CSS classes
-- [ ] Clickable rows (prepare for tool detail view)
-- [ ] Shows "No tools found" when empty
-- [ ] Shows loading spinner during fetch
+- [x] Fetches tools from `/api/tools` on mount
+- [x] Displays table with all columns (Name, Area, Status, Issue, ETA, Updated, Updated By)
+- [x] Status badges with correct CSS classes
+- [x] Clickable rows (prepare for tool detail view)
+- [x] Shows "No tools found" when empty
+- [x] Shows loading spinner during fetch
 
 **Files to modify:**
 - `public/js/app.js` - Add dashboard state and table rendering
