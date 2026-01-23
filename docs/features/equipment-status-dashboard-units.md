@@ -129,8 +129,9 @@ Create the Tool model with denormalized current status fields. Fields: id, name,
 ---
 
 ### Unit 2.3: StatusEvent Model and Migration
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/status-event-model`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/6
 **Depends on:** 2.1, 2.2
 
 **Task:**
