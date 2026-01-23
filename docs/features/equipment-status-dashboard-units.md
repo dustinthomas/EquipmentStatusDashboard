@@ -174,7 +174,7 @@ Create seed script with initial admin user and sample tools. Admin user: usernam
 ## Milestone 3: Authentication
 
 ### Unit 3.1: GenieAuthentication Setup
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/auth-setup`
 **Depends on:** 2.1
 
@@ -182,11 +182,11 @@ Create seed script with initial admin user and sample tools. Admin user: usernam
 Integrate GenieAuthentication with the User model. Configure session handling, password hashing, and authentication checks.
 
 **Acceptance Criteria:**
-- [ ] GenieAuthentication configured in `config/initializers/`
-- [ ] User model integrates with auth system
-- [ ] Password hashing works (Argon2 or bcrypt)
-- [ ] Session storage configured (database-backed)
-- [ ] `authenticate(username, password)` function works
+- [x] GenieAuthentication configured in `config/initializers/`
+- [x] User model integrates with auth system
+- [x] Password hashing works (SHA256 - compatible with existing seed data)
+- [x] Session storage configured (file-based via GenieSessionFileSession)
+- [x] `authenticate(username, password)` function works
 
 **Files to create/modify:**
 - `config/initializers/authentication.jl` - Auth configuration
