@@ -124,8 +124,9 @@ Create JSON API endpoint for updating tool status.
 ---
 
 ### Unit 1.6: Tool History API
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/vue-api-history`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/17
 **Depends on:** 1.3
 
 **Task:**
