@@ -23,7 +23,7 @@ using Main.AuthHelpers: current_user
 include(joinpath(@__DIR__, "..", "lib", "api_helpers.jl"))
 using .ApiHelpers: api_success, api_error
 
-export index, filter_table, state_display_text, api_index
+export index, filter_table, state_display_text, api_index, api_show
 
 # Valid sort columns and their field mappings
 const SORT_COLUMNS = Dict(
@@ -547,6 +547,69 @@ function api_index()
             "states" => VALID_STATES
         )
     ))
+end
+
+"""
+    api_show(id::Int)
+
+JSON API endpoint for fetching a single tool's details.
+GET /api/tools/:id
+
+Returns JSON object with full tool details including:
+- name, area, bay, criticality
+- current state, issue description, comment, ETA
+- last updated timestamp and user name
+
+Returns 404 if tool not found or inactive.
+"""
+function api_show()
+    # Get the tool ID from the route parameters
+    params = Genie.Router.params()
+    id_str = get(params, :id, "")
+
+    # Validate ID parameter
+    local id::Int
+    try
+        id = parse(Int, string(id_str))
+    catch
+        return api_error("Invalid tool ID", status=400)
+    end
+
+    # Find the tool
+    tool = SearchLight.findone(Tool; id = id)
+
+    # Check if tool exists and is active
+    if tool === nothing
+        return api_error("Tool not found", status=404)
+    end
+
+    if !tool.is_active
+        return api_error("Tool not found", status=404)
+    end
+
+    # Prepare tool data for JSON response
+    tool_data = Dict(
+        "id" => tool.id.value,
+        "name" => tool.name,
+        "area" => tool.area,
+        "bay" => tool.bay,
+        "criticality" => tool.criticality,
+        "state" => tool.current_state,
+        "state_display" => state_display_text(tool.current_state),
+        "state_class" => state_css_class(tool.current_state),
+        "issue_description" => tool.current_issue_description,
+        "comment" => tool.current_comment,
+        "eta_to_up" => tool.current_eta_to_up,
+        "eta_to_up_formatted" => format_timestamp(tool.current_eta_to_up),
+        "status_updated_at" => tool.current_status_updated_at,
+        "status_updated_at_formatted" => format_timestamp(tool.current_status_updated_at),
+        "status_updated_by" => get_user_name(tool.current_status_updated_by_user_id),
+        "is_active" => tool.is_active,
+        "created_at" => tool.created_at,
+        "updated_at" => tool.updated_at
+    )
+
+    api_success(Dict("tool" => tool_data))
 end
 
 end # module DashboardController

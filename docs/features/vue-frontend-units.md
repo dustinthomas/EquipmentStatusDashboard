@@ -77,7 +77,7 @@ Standardize API error responses and add CORS headers if needed.
 ---
 
 ### Unit 1.4: Tool Detail API
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/vue-api-tool-detail`
 **Depends on:** 1.3
 
@@ -85,11 +85,11 @@ Standardize API error responses and add CORS headers if needed.
 Create JSON API endpoint for fetching a single tool's details.
 
 **Acceptance Criteria:**
-- [ ] `GET /api/tools/:id` returns JSON with full tool details
-- [ ] Includes: name, area, bay, criticality, current state, issue, comment, ETA
-- [ ] Includes last updated timestamp and user name
-- [ ] Returns 404 JSON error for invalid tool ID
-- [ ] Protected by authentication (401 if not logged in)
+- [x] `GET /api/tools/:id` returns JSON with full tool details
+- [x] Includes: name, area, bay, criticality, current state, issue, comment, ETA
+- [x] Includes last updated timestamp and user name
+- [x] Returns 404 JSON error for invalid tool ID
+- [x] Protected by authentication (401 if not logged in)
 
 **Files to modify:**
 - `src/controllers/DashboardController.jl` - Add `api_show()` function

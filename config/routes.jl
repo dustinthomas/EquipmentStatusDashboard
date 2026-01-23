@@ -83,6 +83,17 @@ route("/api/tools", method = GET) do
     DashboardController.api_index()
 end
 
+# API: Get single tool details
+# GET /api/tools/:id
+# Protected: requires authentication (returns 401 if not logged in)
+route("/api/tools/:id::Int", method = GET) do
+    auth_result = AuthHelpers.require_authentication_api()
+    if auth_result !== nothing
+        return auth_result
+    end
+    DashboardController.api_show()
+end
+
 # ========================================
 # Auth API Routes
 # ========================================
