@@ -99,7 +99,7 @@ Create JSON API endpoint for fetching a single tool's details.
 ---
 
 ### Unit 1.5: Status Update API
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/vue-api-status-update`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/16
 **Depends on:** 1.3
