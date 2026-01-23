@@ -198,8 +198,9 @@ Implement login form and auth state management in Vue.
 ## Milestone 3: Dashboard Implementation
 
 ### Unit 3.1: Tool Table Component
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/vue-dashboard-table`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/21
 **Depends on:** 1.1, 2.1
 
 **Task:**
