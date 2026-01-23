@@ -15,8 +15,9 @@
 ## Milestone 1: JSON API Layer
 
 ### Unit 1.1: Tools API Endpoint
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/vue-api-tools`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/12
 **Depends on:** None
 
 **Task:**
