@@ -15,7 +15,7 @@
 ## Milestone 1: JSON API Layer
 
 ### Unit 1.1: Tools API Endpoint
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/vue-api-tools`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/12
 **Depends on:** None
@@ -124,7 +124,7 @@ Create JSON API endpoint for updating tool status.
 ---
 
 ### Unit 1.6: Tool History API
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/vue-api-history`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/17
 **Depends on:** 1.3
