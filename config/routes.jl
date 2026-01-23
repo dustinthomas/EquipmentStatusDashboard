@@ -21,13 +21,9 @@ route("/health", method = GET) do
     json(Dict("status" => "ok"))
 end
 
-# Root redirect to dashboard (protected by auth)
+# Root redirect to Vue app (Vue handles its own authentication)
 route("/", method = GET) do
-    auth_result = AuthHelpers.require_authentication()
-    if auth_result !== nothing
-        return auth_result
-    end
-    redirect("/dashboard")
+    redirect("/vue")
 end
 
 # Main dashboard route
@@ -161,12 +157,8 @@ end
 # ========================================
 
 # Serve Vue app for /vue routes
-# This serves the index.html which loads Vue and handles client-side routing
+# No server-side auth required - Vue handles authentication via API
 route("/vue", method = GET) do
-    auth_result = AuthHelpers.require_authentication()
-    if auth_result !== nothing
-        return auth_result
-    end
     Genie.Renderer.respond(
         read(joinpath(Genie.config.server_document_root, "index.html"), String),
         :html
@@ -176,10 +168,6 @@ end
 # Catch-all for Vue app sub-routes (e.g., /vue/tools/1)
 # Serves same index.html, Vue router handles the path
 route("/vue/*", method = GET) do
-    auth_result = AuthHelpers.require_authentication()
-    if auth_result !== nothing
-        return auth_result
-    end
     Genie.Renderer.respond(
         read(joinpath(Genie.config.server_document_root, "index.html"), String),
         :html

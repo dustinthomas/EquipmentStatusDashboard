@@ -1776,4 +1776,129 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             end
         end
     end
+
+    @testset "Vue Frontend" begin
+        @testset "Vue app.js file structure" begin
+            app_js_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+            @test isfile(app_js_file)
+
+            app_js_content = read(app_js_file, String)
+
+            # Verify Vue 3 Composition API usage
+            @test occursin("createApp", app_js_content)
+            @test occursin("setup()", app_js_content)
+            @test occursin("reactive", app_js_content)
+            @test occursin("ref", app_js_content)
+            @test occursin("computed", app_js_content)
+            @test occursin("onMounted", app_js_content)
+            @test occursin("watch", app_js_content)
+        end
+
+        @testset "Vue index.html file" begin
+            index_file = joinpath(@__DIR__, "..", "public", "index.html")
+            @test isfile(index_file)
+
+            index_content = read(index_file, String)
+
+            # Verify HTML shell structure
+            @test occursin("<!DOCTYPE html>", index_content)
+            @test occursin("id=\"app\"", index_content)
+            @test occursin("vue@3", index_content)  # Vue CDN
+            @test occursin("qci.css", index_content)
+            @test occursin("/js/app.js", index_content)
+            @test occursin("<noscript>", index_content)
+        end
+
+        @testset "Authentication UI" begin
+            app_js_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+            app_js_content = read(app_js_file, String)
+
+            # Verify auth state
+            @test occursin("auth = reactive", app_js_content)
+            @test occursin("isAuthenticated", app_js_content)
+            @test occursin("loginForm = reactive", app_js_content)
+
+            # Verify auth methods
+            @test occursin("checkAuth", app_js_content)
+            @test occursin("handleLogin", app_js_content)
+            @test occursin("handleLogout", app_js_content)
+
+            # Verify API calls
+            @test occursin("/api/auth/me", app_js_content)
+            @test occursin("/api/auth/login", app_js_content)
+            @test occursin("/api/auth/logout", app_js_content)
+
+            # Verify login form in template
+            @test occursin("login-form", app_js_content)
+            @test occursin("v-model=\"loginForm.username\"", app_js_content)
+            @test occursin("v-model=\"loginForm.password\"", app_js_content)
+        end
+
+        @testset "Dashboard Tool Table Component" begin
+            app_js_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+            app_js_content = read(app_js_file, String)
+
+            # Verify dashboard state
+            @test occursin("dashboard = reactive", app_js_content)
+            @test occursin("tools: []", app_js_content)
+            @test occursin("dashboard.loading", app_js_content)
+            @test occursin("dashboard.error", app_js_content)
+
+            # Verify fetchTools method
+            @test occursin("async function fetchTools", app_js_content)
+            @test occursin("/api/tools", app_js_content)
+            @test occursin("dashboard.tools = data.tools", app_js_content)
+            @test occursin("dashboard.meta = data.meta", app_js_content)
+
+            # Verify handleToolClick method (for clickable rows)
+            @test occursin("function handleToolClick", app_js_content)
+            @test occursin("@click=\"handleToolClick(tool)\"", app_js_content)
+
+            # Verify getRowStatusClass method
+            @test occursin("function getRowStatusClass", app_js_content)
+            @test occursin("tool-row-status-up", app_js_content)
+            @test occursin("tool-row-status-down", app_js_content)
+            @test occursin("tool-row-status-maintenance", app_js_content)
+            @test occursin("tool-row-status-up-with-issues", app_js_content)
+
+            # Verify watch for auth changes triggers fetchTools
+            @test occursin("watch(() => auth.isAuthenticated", app_js_content)
+            @test occursin("fetchTools()", app_js_content)
+
+            # Verify table structure in template
+            @test occursin("dashboard-table", app_js_content)
+            @test occursin("v-for=\"tool in dashboard.tools\"", app_js_content)
+            @test occursin(":key=\"tool.id\"", app_js_content)
+
+            # Verify table columns
+            @test occursin("tool.name", app_js_content)
+            @test occursin("tool.area", app_js_content)
+            @test occursin("tool.state_display", app_js_content)
+            @test occursin("tool.state_class", app_js_content)
+            @test occursin("tool.issue_description", app_js_content)
+            @test occursin("tool.eta_to_up_formatted", app_js_content)
+            @test occursin("tool.status_updated_at_formatted", app_js_content)
+            @test occursin("tool.status_updated_by", app_js_content)
+
+            # Verify status badge
+            @test occursin("status-badge", app_js_content)
+            @test occursin(":class=\"tool.state_class\"", app_js_content)
+
+            # Verify loading state
+            @test occursin("v-if=\"dashboard.loading\"", app_js_content)
+            @test occursin("Loading tools...", app_js_content)
+
+            # Verify empty state
+            @test occursin("dashboard.tools.length === 0", app_js_content)
+            @test occursin("No tools found", app_js_content)
+
+            # Verify error handling
+            @test occursin("v-if=\"dashboard.error\"", app_js_content)
+            @test occursin("Retry", app_js_content)
+
+            # Verify tool count display
+            @test occursin("dashboard.meta.total", app_js_content)
+            @test occursin("dashboard.meta.filtered", app_js_content)
+        end
+    end
 end

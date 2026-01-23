@@ -35,6 +35,21 @@ const app = createApp({
         });
 
         // ========================================
+        // Dashboard State
+        // ========================================
+        const dashboard = reactive({
+            tools: [],
+            meta: {
+                total: 0,
+                filtered: 0,
+                areas: [],
+                states: []
+            },
+            loading: false,
+            error: null
+        });
+
+        // ========================================
         // Authentication Methods
         // ========================================
 
@@ -142,6 +157,10 @@ const app = createApp({
                 // Clear auth state regardless of response
                 auth.isAuthenticated = false;
                 auth.user = null;
+
+                // Clear dashboard data on logout
+                dashboard.tools = [];
+                dashboard.meta = { total: 0, filtered: 0, areas: [], states: [] };
             } catch (error) {
                 console.error('Logout request failed:', error);
                 // Clear auth state anyway - session may be invalid
@@ -153,12 +172,86 @@ const app = createApp({
         }
 
         // ========================================
+        // Dashboard Methods
+        // ========================================
+
+        /**
+         * Fetch tools from the API.
+         * Calls /api/tools with optional query parameters.
+         */
+        async function fetchTools() {
+            dashboard.loading = true;
+            dashboard.error = null;
+
+            try {
+                const response = await fetch('/api/tools', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    dashboard.tools = data.tools || [];
+                    dashboard.meta = data.meta || { total: 0, filtered: 0, areas: [], states: [] };
+                } else if (response.status === 401) {
+                    // Session expired - redirect to login
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    dashboard.error = 'Session expired. Please log in again.';
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    dashboard.error = errorData.error || 'Failed to load tools';
+                }
+            } catch (error) {
+                console.error('Failed to fetch tools:', error);
+                dashboard.error = 'Unable to connect to server. Please try again.';
+            } finally {
+                dashboard.loading = false;
+            }
+        }
+
+        /**
+         * Handle clicking on a tool row.
+         * Prepares for tool detail view (to be implemented in Unit 4.1).
+         * @param {Object} tool - The tool object that was clicked
+         */
+        function handleToolClick(tool) {
+            // Tool detail view will be implemented in Unit 4.1
+            console.log('Tool clicked:', tool.id, tool.name);
+        }
+
+        /**
+         * Get CSS class for table row based on tool status.
+         * @param {string} state - The tool's current state
+         * @returns {string} CSS class name
+         */
+        function getRowStatusClass(state) {
+            const classes = {
+                'UP': 'tool-row-status-up',
+                'UP_WITH_ISSUES': 'tool-row-status-up-with-issues',
+                'MAINTENANCE': 'tool-row-status-maintenance',
+                'DOWN': 'tool-row-status-down'
+            };
+            return classes[state] || '';
+        }
+
+        // ========================================
         // Lifecycle
         // ========================================
 
         // Check authentication status when app mounts
         onMounted(() => {
             checkAuth();
+        });
+
+        // Watch for authentication changes to fetch tools
+        watch(() => auth.isAuthenticated, (isAuthenticated) => {
+            if (isAuthenticated) {
+                fetchTools();
+            }
         });
 
         // ========================================
@@ -182,6 +275,7 @@ const app = createApp({
             appReady,
             auth,
             loginForm,
+            dashboard,
 
             // Computed
             isAdmin,
@@ -189,7 +283,10 @@ const app = createApp({
 
             // Methods
             handleLogin,
-            handleLogout
+            handleLogout,
+            fetchTools,
+            handleToolClick,
+            getRowStatusClass
         };
     },
 
@@ -297,20 +394,74 @@ const app = createApp({
                     <template v-else>
                         <div class="page-header">
                             <h1>Equipment Status Dashboard</h1>
-                            <p>Welcome, {{ userName }}</p>
+                            <p v-if="dashboard.meta.total > 0">
+                                Showing {{ dashboard.meta.filtered }} of {{ dashboard.meta.total }} tools
+                            </p>
                         </div>
 
-                        <div class="card">
-                            <p style="text-align: center; color: #666; padding: 40px 20px;">
-                                Dashboard components will be implemented in Milestone 3.
-                                <br><br>
-                                <strong>API endpoints available:</strong>
-                                <br>
-                                GET /api/tools - List tools<br>
-                                GET /api/tools/:id - Tool details<br>
-                                POST /api/tools/:id/status - Update status<br>
-                                GET /api/tools/:id/history - Status history
-                            </p>
+                        <!-- Error Message -->
+                        <div v-if="dashboard.error" class="alert alert-error">
+                            {{ dashboard.error }}
+                            <button class="btn btn-sm btn-secondary" style="margin-left: 10px;" @click="fetchTools">
+                                Retry
+                            </button>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div v-if="dashboard.loading" class="card" style="text-align: center; padding: 60px 20px;">
+                            <div class="loading-spinner-inline"></div>
+                            <p style="margin-top: 20px; color: #666;">Loading tools...</p>
+                        </div>
+
+                        <!-- Tools Table -->
+                        <div v-else class="card dashboard-card">
+                            <!-- Empty State -->
+                            <div v-if="dashboard.tools.length === 0" style="text-align: center; padding: 60px 20px;">
+                                <p style="color: #666; font-size: 1.1rem;">No tools found</p>
+                                <p style="color: #999; font-size: 0.9rem; margin-top: 10px;">
+                                    There are no equipment tools to display.
+                                </p>
+                            </div>
+
+                            <!-- Table -->
+                            <div v-else class="table-container">
+                                <table class="table dashboard-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Area</th>
+                                            <th>Status</th>
+                                            <th>Issue</th>
+                                            <th>ETA</th>
+                                            <th>Updated</th>
+                                            <th>Updated By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="tool in dashboard.tools"
+                                            :key="tool.id"
+                                            class="tool-row"
+                                            :class="getRowStatusClass(tool.state)"
+                                            @click="handleToolClick(tool)"
+                                        >
+                                            <td class="tool-name">{{ tool.name }}</td>
+                                            <td>{{ tool.area }}</td>
+                                            <td>
+                                                <span class="status-badge" :class="tool.state_class">
+                                                    {{ tool.state_display }}
+                                                </span>
+                                            </td>
+                                            <td class="issue-cell" :title="tool.issue_description">
+                                                {{ tool.issue_description || '-' }}
+                                            </td>
+                                            <td>{{ tool.eta_to_up_formatted || '-' }}</td>
+                                            <td>{{ tool.status_updated_at_formatted || '-' }}</td>
+                                            <td>{{ tool.status_updated_by || '-' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </template>
                 </div>

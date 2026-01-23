@@ -4,7 +4,7 @@
 module ApiHelpers
 
 using Genie
-using Genie.Renderer.Json: json
+using Genie.Renderer.Json: JSONParser
 
 export api_success, api_error, api_unauthorized, api_forbidden, api_not_found, api_bad_request
 
@@ -22,9 +22,9 @@ JSON response with Content-Type: application/json
 """
 function api_success(data::Dict; status::Int=200)
     return Genie.Renderer.respond(
-        json(data),
+        JSONParser.json(data),
         status,
-        Dict("Content-Type" => "application/json")
+        Dict("Content-Type" => "application/json; charset=utf-8")
     )
 end
 
@@ -42,9 +42,9 @@ JSON response: {"error": "message"}
 """
 function api_error(message::String; status::Int=500)
     return Genie.Renderer.respond(
-        json(Dict("error" => message)),
+        JSONParser.json(Dict("error" => message)),
         status,
-        Dict("Content-Type" => "application/json")
+        Dict("Content-Type" => "application/json; charset=utf-8")
     )
 end
 
