@@ -84,7 +84,7 @@ Create the base HTML layout template with QCI branding placeholder. Include Rale
 ## Milestone 2: Data Models
 
 ### Unit 2.1: User Model and Migration
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/user-model`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/4
 **Depends on:** 1.2
