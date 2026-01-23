@@ -56,8 +56,9 @@ Create JSON API endpoints for authentication.
 ---
 
 ### Unit 1.3: API Error Handling
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/vue-api-errors`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/14
 **Depends on:** 1.1, 1.2
 
 **Task:**
