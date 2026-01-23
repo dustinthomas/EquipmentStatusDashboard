@@ -73,6 +73,73 @@ Standardize API error responses and add CORS headers if needed.
 
 ---
 
+### Unit 1.4: Tool Detail API
+**Status:** PENDING
+**Branch:** `feature/vue-api-tool-detail`
+**Depends on:** 1.3
+
+**Task:**
+Create JSON API endpoint for fetching a single tool's details.
+
+**Acceptance Criteria:**
+- [ ] `GET /api/tools/:id` returns JSON with full tool details
+- [ ] Includes: name, area, bay, criticality, current state, issue, comment, ETA
+- [ ] Includes last updated timestamp and user name
+- [ ] Returns 404 JSON error for invalid tool ID
+- [ ] Protected by authentication (401 if not logged in)
+
+**Files to modify:**
+- `src/controllers/DashboardController.jl` - Add `api_show()` function
+- `config/routes.jl` - Add `/api/tools/:id` route
+
+---
+
+### Unit 1.5: Status Update API
+**Status:** PENDING
+**Branch:** `feature/vue-api-status-update`
+**Depends on:** 1.3
+
+**Task:**
+Create JSON API endpoint for updating tool status.
+
+**Acceptance Criteria:**
+- [ ] `POST /api/tools/:id/status` accepts JSON `{state, issue_description, comment, eta_to_up}`
+- [ ] Creates StatusEvent record
+- [ ] Updates Tool's current_* fields
+- [ ] Sets current_status_updated_by_user_id to logged-in user
+- [ ] If state is UP, clears ETA
+- [ ] Returns updated tool JSON on success
+- [ ] Returns 400 with validation errors on invalid input
+- [ ] Protected by authentication (401 if not logged in)
+
+**Files to modify:**
+- `src/controllers/DashboardController.jl` - Add `api_update_status()` function
+- `config/routes.jl` - Add `/api/tools/:id/status` route
+
+---
+
+### Unit 1.6: Tool History API
+**Status:** PENDING
+**Branch:** `feature/vue-api-history`
+**Depends on:** 1.3
+
+**Task:**
+Create JSON API endpoint for fetching tool status history.
+
+**Acceptance Criteria:**
+- [ ] `GET /api/tools/:id/history` returns JSON array of status events
+- [ ] Supports query params: `from`, `to` (date range filter)
+- [ ] Returns: timestamp, user name, state, issue, comment, ETA for each event
+- [ ] Ordered by created_at descending (newest first)
+- [ ] `GET /api/tools/:id/history.csv` returns CSV download
+- [ ] Protected by authentication (401 if not logged in)
+
+**Files to modify:**
+- `src/controllers/DashboardController.jl` - Add `api_history()` function
+- `config/routes.jl` - Add `/api/tools/:id/history` route
+
+---
+
 ## Milestone 2: Vue App Shell
 
 ### Unit 2.1: HTML Shell & Vue Setup
@@ -185,12 +252,81 @@ Implement column sorting.
 
 ---
 
-## Milestone 4: Cleanup & Testing
+## Milestone 4: Tool Management Views
 
-### Unit 4.1: Navigation & Polish
+### Unit 4.1: Tool Detail View
+**Status:** PENDING
+**Branch:** `feature/vue-tool-detail`
+**Depends on:** 1.4, 2.1
+
+**Task:**
+Implement tool detail view showing full status and actions.
+
+**Acceptance Criteria:**
+- [ ] Clicking a tool row navigates to detail view
+- [ ] Shows: name, area, bay, criticality, current state, issue, comment, ETA
+- [ ] Shows last updated timestamp and user name
+- [ ] "Update Status" button opens status update form
+- [ ] "View History" button navigates to history view
+- [ ] "Back to Dashboard" link
+- [ ] Loading state while fetching
+- [ ] Error handling for 404
+
+**Files to modify:**
+- `public/js/app.js` - Add tool detail component and routing
+
+---
+
+### Unit 4.2: Status Update Form
+**Status:** PENDING
+**Branch:** `feature/vue-status-update`
+**Depends on:** 1.5, 4.1
+
+**Task:**
+Implement status update form as modal or inline component.
+
+**Acceptance Criteria:**
+- [ ] Form with: state dropdown (required), issue (optional), comment (optional), ETA (optional)
+- [ ] State dropdown shows all valid states with color indicators
+- [ ] ETA field hidden/cleared when state is UP
+- [ ] Submit calls `/api/tools/:id/status`
+- [ ] Shows validation errors from API
+- [ ] Success updates tool detail view
+- [ ] Cancel button closes form without saving
+
+**Files to modify:**
+- `public/js/app.js` - Add status update component
+
+---
+
+### Unit 4.3: Tool History View
+**Status:** PENDING
+**Branch:** `feature/vue-history`
+**Depends on:** 1.6, 4.1
+
+**Task:**
+Implement tool history view with filtering and export.
+
+**Acceptance Criteria:**
+- [ ] Lists all status events for the tool
+- [ ] Shows: timestamp, user, state, issue, comment, ETA
+- [ ] Ordered newest first
+- [ ] Date range filter (from/to date pickers)
+- [ ] "Export CSV" button triggers download
+- [ ] "Back to Tool" link
+- [ ] Loading state while fetching
+
+**Files to modify:**
+- `public/js/app.js` - Add history component
+
+---
+
+## Milestone 5: Cleanup & Testing
+
+### Unit 5.1: Navigation & Polish
 **Status:** PENDING
 **Branch:** `feature/vue-nav-polish`
-**Depends on:** 2.2, 3.3
+**Depends on:** 2.2, 4.3
 
 **Task:**
 Complete navigation and polish the UI.
@@ -209,10 +345,10 @@ Complete navigation and polish the UI.
 
 ---
 
-### Unit 4.2: Remove Old Templates & Final Testing
+### Unit 5.2: Remove Old Templates & Final Testing
 **Status:** PENDING
 **Branch:** `feature/vue-cleanup`
-**Depends on:** 4.1
+**Depends on:** 5.1
 
 **Task:**
 Remove old Genie templates and ensure all tests pass.

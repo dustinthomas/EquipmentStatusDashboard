@@ -9,6 +9,12 @@
 - IMPLEMENTED: Code complete, needs verification
 - VERIFIED: Tests pass, ready for merge
 - MERGED: Complete
+- SKIPPED: Will not implement (see reason)
+
+## Decision Log
+
+**2026-01-23: Pivot to Vue.js frontend**
+Units 4.3, 4.4, and 4.5 (Tool Detail, Status Update, Tool History) are skipped in server-rendered form. These features will be implemented directly in the Vue.js frontend. See `docs/features/vue-frontend-units.md` for the Vue implementation units.
 
 ---
 
@@ -290,72 +296,81 @@ Add sorting and filtering to dashboard. Sortable columns: name, state, area, las
 ---
 
 ### Unit 4.3: Tool Detail View
-**Status:** PENDING
+**Status:** SKIPPED
+**Reason:** Implementing directly in Vue frontend (see `docs/features/vue-frontend-units.md`)
 **Branch:** `feature/tool-detail`
 **Depends on:** 4.1
 
 **Task:**
-Create tool detail page showing full current status and actions. Include "Update Status" button and "View History" link.
+~~Create tool detail page showing full current status and actions. Include "Update Status" button and "View History" link.~~
+
+**Note:** This feature will be implemented as part of the Vue.js frontend migration instead of server-rendered templates.
 
 **Acceptance Criteria:**
-- [ ] `GET /tools/:id` renders tool detail
-- [ ] Shows: name, area, bay, criticality, current state, issue, comment, ETA
-- [ ] Shows last updated timestamp and user name
-- [ ] "Update Status" button links to update form
-- [ ] "View History" links to history page
-- [ ] 404 for invalid tool ID
+- [ ] ~~`GET /tools/:id` renders tool detail~~
+- [ ] ~~Shows: name, area, bay, criticality, current state, issue, comment, ETA~~
+- [ ] ~~Shows last updated timestamp and user name~~
+- [ ] ~~"Update Status" button links to update form~~
+- [ ] ~~"View History" links to history page~~
+- [ ] ~~404 for invalid tool ID~~
 
 **Files to create/modify:**
-- `src/controllers/ToolsController.jl` - Detail handler
-- `src/views/tools/show.jl.html` - Detail template
-- `config/routes.jl` - Add tool routes
+- ~~`src/controllers/ToolsController.jl` - Detail handler~~
+- ~~`src/views/tools/show.jl.html` - Detail template~~
+- ~~`config/routes.jl` - Add tool routes~~
 
 ---
 
 ### Unit 4.4: Status Update Form
-**Status:** PENDING
+**Status:** SKIPPED
+**Reason:** Implementing directly in Vue frontend (see `docs/features/vue-frontend-units.md`)
 **Branch:** `feature/status-update`
 **Depends on:** 4.3, 2.3
 
 **Task:**
-Create form to update tool status. On submit: create StatusEvent, update Tool's current_* fields, redirect to tool detail.
+~~Create form to update tool status. On submit: create StatusEvent, update Tool's current_* fields, redirect to tool detail.~~
+
+**Note:** This feature will be implemented as part of the Vue.js frontend migration. JSON API endpoints for status updates will be added to support the Vue frontend.
 
 **Acceptance Criteria:**
-- [ ] `GET /tools/:id/status/new` renders update form
-- [ ] Form has: state dropdown (required), issue (optional), comment (optional), ETA (optional)
-- [ ] `POST /tools/:id/status` creates StatusEvent
-- [ ] Tool's current_* fields updated
-- [ ] current_status_updated_by_user_id set to logged-in user
-- [ ] If state is UP, ETA cleared
-- [ ] Redirects to tool detail on success
+- [ ] ~~`GET /tools/:id/status/new` renders update form~~
+- [ ] ~~Form has: state dropdown (required), issue (optional), comment (optional), ETA (optional)~~
+- [ ] ~~`POST /tools/:id/status` creates StatusEvent~~
+- [ ] ~~Tool's current_* fields updated~~
+- [ ] ~~current_status_updated_by_user_id set to logged-in user~~
+- [ ] ~~If state is UP, ETA cleared~~
+- [ ] ~~Redirects to tool detail on success~~
 
 **Files to create/modify:**
-- `src/controllers/ToolsController.jl` - Status update handlers
-- `src/views/tools/status_new.jl.html` - Update form template
-- `config/routes.jl` - Add status routes
+- ~~`src/controllers/ToolsController.jl` - Status update handlers~~
+- ~~`src/views/tools/status_new.jl.html` - Update form template~~
+- ~~`config/routes.jl` - Add status routes~~
 
 ---
 
 ### Unit 4.5: Tool History View
-**Status:** PENDING
+**Status:** SKIPPED
+**Reason:** Implementing directly in Vue frontend (see `docs/features/vue-frontend-units.md`)
 **Branch:** `feature/tool-history`
 **Depends on:** 4.3, 2.3
 
 **Task:**
-Create history page showing chronological status events for a tool. Include date range filter and CSV export.
+~~Create history page showing chronological status events for a tool. Include date range filter and CSV export.~~
+
+**Note:** This feature will be implemented as part of the Vue.js frontend migration. JSON API endpoints for history data will be added to support the Vue frontend.
 
 **Acceptance Criteria:**
-- [ ] `GET /tools/:id/history` renders history list
-- [ ] Shows: timestamp, user, state, issue, comment, ETA
-- [ ] Ordered by created_at descending (newest first)
-- [ ] Date range filter (from, to) works
-- [ ] "Export CSV" button downloads filtered history
-- [ ] CSV includes all history fields
+- [ ] ~~`GET /tools/:id/history` renders history list~~
+- [ ] ~~Shows: timestamp, user, state, issue, comment, ETA~~
+- [ ] ~~Ordered by created_at descending (newest first)~~
+- [ ] ~~Date range filter (from, to) works~~
+- [ ] ~~"Export CSV" button downloads filtered history~~
+- [ ] ~~CSV includes all history fields~~
 
 **Files to create/modify:**
-- `src/controllers/ToolsController.jl` - History handler
-- `src/views/tools/history.jl.html` - History template
-- `config/routes.jl` - Add history route
+- ~~`src/controllers/ToolsController.jl` - History handler~~
+- ~~`src/views/tools/history.jl.html` - History template~~
+- ~~`config/routes.jl` - Add history route~~
 
 ---
 
