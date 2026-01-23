@@ -19,6 +19,10 @@ using .Users: User
 # Import auth helpers
 using Main.AuthHelpers: current_user
 
+# Import API helpers for consistent error responses
+include(joinpath(@__DIR__, "..", "lib", "api_helpers.jl"))
+using .ApiHelpers: api_success, api_error
+
 export index, filter_table, state_display_text, api_index
 
 # Valid sort columns and their field mappings
@@ -534,7 +538,7 @@ function api_index()
     ]
 
     # Return JSON response with metadata
-    json(Dict(
+    api_success(Dict(
         "tools" => tool_data,
         "meta" => Dict(
             "total" => length(all_tools),

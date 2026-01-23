@@ -10,6 +10,10 @@ using Genie.Requests: getrequest
 using GenieSession
 using Logging
 
+# Import API helpers for consistent error responses
+include(joinpath(@__DIR__, "api_helpers.jl"))
+using .ApiHelpers: api_unauthorized, api_forbidden
+
 # Session keys for redirect URL storage
 const REDIRECT_URL_KEY = :__redirect_url
 const LAST_ACTIVITY_KEY = :__last_activity
@@ -167,21 +171,13 @@ function require_authentication_api()
     if !check_session_timeout(session, timeout_seconds)
         @info "Session expired, clearing authentication"
         Main.logout!(session)
-        return Genie.Renderer.respond(
-            json(Dict("error" => "Session expired")),
-            401,
-            Dict("Content-Type" => "application/json")
-        )
+        return api_unauthorized("Session expired")
     end
 
     # Check if authenticated
     if !Main.is_authenticated(session)
         @debug "Unauthenticated API access attempt" path=get_current_path()
-        return Genie.Renderer.respond(
-            json(Dict("error" => "Unauthorized")),
-            401,
-            Dict("Content-Type" => "application/json")
-        )
+        return api_unauthorized()
     end
 
     return nothing
