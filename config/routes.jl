@@ -106,6 +106,30 @@ route("/api/tools/:id::Int/status", method = POST) do
     DashboardController.api_update_status()
 end
 
+# API: Get tool status history
+# GET /api/tools/:id/history
+# Query params: from, to (date range filter)
+# Protected: requires authentication (returns 401 if not logged in)
+route("/api/tools/:id::Int/history", method = GET) do
+    auth_result = AuthHelpers.require_authentication_api()
+    if auth_result !== nothing
+        return auth_result
+    end
+    DashboardController.api_history()
+end
+
+# API: Download tool status history as CSV
+# GET /api/tools/:id/history.csv
+# Query params: from, to (date range filter)
+# Protected: requires authentication (returns 401 if not logged in)
+route("/api/tools/:id::Int/history.csv", method = GET) do
+    auth_result = AuthHelpers.require_authentication_api()
+    if auth_result !== nothing
+        return auth_result
+    end
+    DashboardController.api_history_csv()
+end
+
 # ========================================
 # Auth API Routes
 # ========================================
