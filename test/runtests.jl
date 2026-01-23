@@ -1291,6 +1291,40 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test occursin("401", helpers_content)  # Returns 401 for unauth
                 @test occursin("Unauthorized", helpers_content)
             end
+
+            @testset "api_show function exists" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify api_show function is defined
+                @test occursin("function api_show", controller_content)
+                @test occursin("export", controller_content) && occursin("api_show", controller_content)
+
+                # Verify it returns proper tool fields
+                @test occursin("\"name\"", controller_content)
+                @test occursin("\"area\"", controller_content)
+                @test occursin("\"bay\"", controller_content)
+                @test occursin("\"criticality\"", controller_content)
+                @test occursin("\"state\"", controller_content)
+                @test occursin("\"issue_description\"", controller_content)
+                @test occursin("\"comment\"", controller_content)
+                @test occursin("\"eta_to_up\"", controller_content)
+                @test occursin("\"status_updated_at\"", controller_content)
+                @test occursin("\"status_updated_by\"", controller_content)
+
+                # Verify error handling
+                @test occursin("Tool not found", controller_content)
+                @test occursin("status=404", controller_content)
+            end
+
+            @testset "api_show route defined" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                routes_content = read(routes_file, String)
+
+                @test occursin("/api/tools/:id", routes_content)
+                @test occursin("api_show", routes_content)
+                @test occursin("require_authentication_api", routes_content)
+            end
         end
 
         @testset "AuthController API" begin
