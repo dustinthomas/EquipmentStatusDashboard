@@ -77,8 +77,9 @@ Standardize API error responses and add CORS headers if needed.
 ---
 
 ### Unit 1.4: Tool Detail API
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/vue-api-tool-detail`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/15
 **Depends on:** 1.3
 
 **Task:**
