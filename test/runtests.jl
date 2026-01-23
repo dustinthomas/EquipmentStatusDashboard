@@ -1161,6 +1161,84 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test occursin("Unauthorized", helpers_content)
             end
         end
+
+        @testset "AuthController API" begin
+            @testset "API functions exist" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify api_login function is defined
+                @test occursin("function api_login", controller_content)
+                @test occursin("POST /api/auth/login", controller_content)
+                @test occursin("jsonpayload", controller_content)
+
+                # Verify api_logout function is defined
+                @test occursin("function api_logout", controller_content)
+                @test occursin("POST /api/auth/logout", controller_content)
+
+                # Verify api_me function is defined
+                @test occursin("function api_me", controller_content)
+                @test occursin("GET /api/auth/me", controller_content)
+
+                # Verify JSON rendering is used
+                @test occursin("Genie.Renderer.Json: json", controller_content)
+            end
+
+            @testset "Auth API routes defined" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                routes_content = read(routes_file, String)
+
+                # Verify all auth API routes are defined
+                @test occursin("/api/auth/login", routes_content)
+                @test occursin("/api/auth/logout", routes_content)
+                @test occursin("/api/auth/me", routes_content)
+
+                # Verify correct HTTP methods
+                @test occursin("api_login", routes_content)
+                @test occursin("api_logout", routes_content)
+                @test occursin("api_me", routes_content)
+            end
+
+            @testset "Auth API response formats" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify login returns user data on success
+                @test occursin("\"user\"", controller_content)
+                @test occursin("\"id\"", controller_content)
+                @test occursin("\"username\"", controller_content)
+                @test occursin("\"name\"", controller_content)
+                @test occursin("\"role\"", controller_content)
+
+                # Verify logout returns success
+                @test occursin("\"success\" => true", controller_content)
+
+                # Verify error responses use proper HTTP codes
+                @test occursin("400", controller_content)  # Bad request
+                @test occursin("401", controller_content)  # Unauthorized
+                @test occursin("500", controller_content)  # Server error
+
+                # Verify error format
+                @test occursin("\"error\"", controller_content)
+            end
+
+            @testset "Auth API input validation" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify empty credentials validation
+                @test occursin("Username and password are required", controller_content)
+
+                # Verify invalid credentials error
+                @test occursin("Invalid username or password", controller_content)
+
+                # Verify JSON parsing error handling
+                @test occursin("Invalid JSON payload", controller_content)
+
+                # Verify not authenticated error for api_me
+                @test occursin("Not authenticated", controller_content)
+            end
+        end
     end
 
     @testset "Authentication" begin

@@ -82,3 +82,29 @@ route("/api/tools", method = GET) do
     end
     DashboardController.api_index()
 end
+
+# ========================================
+# Auth API Routes
+# ========================================
+
+# API: Login
+# POST /api/auth/login
+# Accepts JSON: {username, password}
+# Returns JSON: user info on success, error on failure
+route("/api/auth/login", method = POST) do
+    AuthController.api_login()
+end
+
+# API: Logout
+# POST /api/auth/logout
+# Clears session and returns success
+route("/api/auth/logout", method = POST) do
+    AuthController.api_logout()
+end
+
+# API: Get current user info
+# GET /api/auth/me
+# Returns JSON: current user info or 401 if not logged in
+route("/api/auth/me", method = GET) do
+    AuthController.api_me()
+end
