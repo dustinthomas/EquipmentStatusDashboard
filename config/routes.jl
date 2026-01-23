@@ -94,6 +94,18 @@ route("/api/tools/:id::Int", method = GET) do
     DashboardController.api_show()
 end
 
+# API: Update tool status
+# POST /api/tools/:id/status
+# Accepts JSON: {state, issue_description, comment, eta_to_up}
+# Protected: requires authentication (returns 401 if not logged in)
+route("/api/tools/:id::Int/status", method = POST) do
+    auth_result = AuthHelpers.require_authentication_api()
+    if auth_result !== nothing
+        return auth_result
+    end
+    DashboardController.api_update_status()
+end
+
 # ========================================
 # Auth API Routes
 # ========================================

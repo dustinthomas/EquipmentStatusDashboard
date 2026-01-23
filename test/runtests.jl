@@ -1325,6 +1325,61 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test occursin("api_show", routes_content)
                 @test occursin("require_authentication_api", routes_content)
             end
+
+            @testset "api_update_status function exists" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify api_update_status function is defined
+                @test occursin("function api_update_status", controller_content)
+                @test occursin("export", controller_content) && occursin("api_update_status", controller_content)
+
+                # Verify it accepts required fields
+                @test occursin("state", controller_content)
+                @test occursin("issue_description", controller_content)
+                @test occursin("comment", controller_content)
+                @test occursin("eta_to_up", controller_content)
+
+                # Verify it creates StatusEvent
+                @test occursin("create_status_event!", controller_content)
+
+                # Verify it updates Tool status
+                @test occursin("update_current_status!", controller_content)
+
+                # Verify error handling
+                @test occursin("State is required", controller_content)
+                @test occursin("Invalid state", controller_content)
+                @test occursin("api_bad_request", controller_content)
+                @test occursin("api_not_found", controller_content)
+            end
+
+            @testset "api_update_status route defined" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                routes_content = read(routes_file, String)
+
+                @test occursin("/api/tools/:id", routes_content)
+                @test occursin("/status", routes_content)
+                @test occursin("api_update_status", routes_content)
+                @test occursin("method = POST", routes_content)
+                @test occursin("require_authentication_api", routes_content)
+            end
+
+            @testset "api_update_status validation" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify validates state is one of VALID_STATES
+                @test occursin("validate_state", controller_content)
+                @test occursin("Invalid state. Must be one of", controller_content)
+
+                # Verify request body parsing
+                @test occursin("jsonpayload", controller_content)
+                @test occursin("Invalid JSON payload", controller_content)
+                @test occursin("Request body is required", controller_content)
+
+                # Verify tool lookup and 404 handling
+                @test occursin("Tool not found", controller_content)
+            end
         end
 
         @testset "AuthController API" begin
