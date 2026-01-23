@@ -13,6 +13,9 @@ using .AuthHelpers
 include(joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl"))
 using .AuthController
 
+include(joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl"))
+using .DashboardController
+
 # Health check endpoint - returns JSON status for monitoring
 route("/health", method = GET) do
     json(Dict("status" => "ok"))
@@ -27,14 +30,14 @@ route("/", method = GET) do
     redirect("/dashboard")
 end
 
-# Placeholder dashboard route (to be implemented in Unit 4.1)
+# Main dashboard route
 # Protected: requires authentication
 route("/dashboard", method = GET) do
     auth_result = AuthHelpers.require_authentication()
     if auth_result !== nothing
         return auth_result
     end
-    "Dashboard coming soon"
+    DashboardController.index()
 end
 
 # ========================================

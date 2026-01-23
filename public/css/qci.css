@@ -145,3 +145,76 @@
     width: 100%;
     display: block;
 }
+
+/* ========================================
+   Dashboard Styles
+   ======================================== */
+.dashboard-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.dashboard-table {
+    margin-bottom: 0;
+}
+
+.dashboard-table th {
+    white-space: nowrap;
+}
+
+.tool-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.tool-row:hover {
+    background-color: var(--hover-bg);
+}
+
+.tool-name {
+    font-weight: 500;
+}
+
+.issue-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Row background colors based on status */
+.tool-row-status-down {
+    background-color: rgba(231, 76, 60, 0.1);
+}
+
+.tool-row-status-down:hover {
+    background-color: rgba(231, 76, 60, 0.2);
+}
+
+.tool-row-status-maintenance {
+    background-color: rgba(230, 126, 34, 0.1);
+}
+
+.tool-row-status-maintenance:hover {
+    background-color: rgba(230, 126, 34, 0.2);
+}
+
+.tool-row-status-up-with-issues {
+    background-color: rgba(243, 156, 18, 0.1);
+}
+
+.tool-row-status-up-with-issues:hover {
+    background-color: rgba(243, 156, 18, 0.2);
+}
+
+.tool-row-status-up {
+    background-color: rgba(46, 204, 113, 0.05);
+}
+
+.tool-row-status-up:hover {
+    background-color: rgba(46, 204, 113, 0.1);
+}

@@ -1,0 +1,42 @@
+<div class="page-header">
+    <h1>Equipment Status Dashboard</h1>
+    <p>$(string(tool_count)) active tools</p>
+</div>
+
+<div class="card dashboard-card">
+    <% if isempty(tools) %>
+        <p class="text-center">No tools found.</p>
+    <% else %>
+        <div class="table-container">
+            <table class="table dashboard-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Area</th>
+                        <th>Status</th>
+                        <th>Issue</th>
+                        <th>ETA to Up</th>
+                        <th>Last Updated</th>
+                        <th>Updated By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% [
+                        tr(class="tool-row tool-row-$(tool[:state_class])", onclick="window.location='/tools/$(tool[:id])'") do
+                            [
+                                td(class="tool-name", tool[:name]),
+                                td(tool[:area]),
+                                td(span(class="status-badge $(tool[:state_class])", tool[:state_display])),
+                                td(class="issue-cell", title=tool[:full_issue], tool[:issue]),
+                                td(tool[:eta]),
+                                td(tool[:updated_at]),
+                                td(tool[:updated_by])
+                            ]
+                        end
+                        for tool in tools
+                    ] %>
+                </tbody>
+            </table>
+        </div>
+    <% end %>
+</div>

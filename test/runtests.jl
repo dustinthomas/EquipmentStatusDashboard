@@ -727,8 +727,102 @@ ENV["SEARCHLIGHT_ENV"] = "test"
     end
 
     @testset "Controllers" begin
-        # TODO: Add controller tests
-        @test true  # Placeholder
+        @testset "DashboardController" begin
+            @testset "DashboardController file exists" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
+                @test isfile(controller_file)
+
+                # Verify key functions are defined
+                controller_content = read(controller_file, String)
+                @test occursin("module DashboardController", controller_content)
+                @test occursin("function index", controller_content)
+                @test occursin("find_active_tools", controller_content)
+                @test occursin("state_sort_order", controller_content)
+                @test occursin("truncate_text", controller_content)
+                @test occursin("format_timestamp", controller_content)
+                @test occursin("state_css_class", controller_content)
+                @test occursin("state_display_text", controller_content)
+            end
+
+            @testset "Dashboard view template exists" begin
+                view_file = joinpath(@__DIR__, "..", "src", "views", "dashboard", "index.jl.html")
+                @test isfile(view_file)
+
+                # Verify key elements are present
+                view_content = read(view_file, String)
+                @test occursin("Equipment Status Dashboard", view_content)
+                @test occursin("<table", view_content)
+                @test occursin("status-badge", view_content)
+                @test occursin("tool-row", view_content)
+                @test occursin("/tools/", view_content)  # Links to tool detail
+            end
+
+            @testset "Dashboard route defined" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                routes_content = read(routes_file, String)
+
+                @test occursin("DashboardController", routes_content)
+                @test occursin("/dashboard", routes_content)
+            end
+
+            @testset "Dashboard styling" begin
+                css_file = joinpath(@__DIR__, "..", "public", "css", "qci.css")
+                css_content = read(css_file, String)
+
+                # Check for dashboard-specific styles
+                @test occursin(".dashboard-card", css_content)
+                @test occursin(".tool-row", css_content)
+                @test occursin(".tool-row-status-down", css_content)
+                @test occursin(".tool-row-status-up", css_content)
+                @test occursin(".tool-row-status-maintenance", css_content)
+                @test occursin(".tool-row-status-up-with-issues", css_content)
+            end
+
+            @testset "Helper functions" begin
+                # Include the controller to test helper functions
+                include(joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl"))
+                using .DashboardController: state_sort_order, truncate_text, format_timestamp,
+                                            state_css_class, state_display_text
+
+                @testset "state_sort_order" begin
+                    @test state_sort_order("DOWN") == 1
+                    @test state_sort_order("MAINTENANCE") == 2
+                    @test state_sort_order("UP_WITH_ISSUES") == 3
+                    @test state_sort_order("UP") == 4
+                    @test state_sort_order("UNKNOWN") == 5
+                end
+
+                @testset "truncate_text" begin
+                    @test truncate_text("short") == "short"
+                    @test truncate_text("a" ^ 100, 50) == ("a" ^ 47) * "..."
+                    @test truncate_text("exactly50chars" * "a" ^ 36, 50) == "exactly50chars" * "a" ^ 36  # Exactly 50, no truncation
+                    @test truncate_text("exactly51chars" * "a" ^ 37, 50) == "exactly51chars" * "a" ^ 33 * "..."  # 51 chars gets truncated
+                    @test truncate_text("", 50) == ""
+                end
+
+                @testset "format_timestamp" begin
+                    @test format_timestamp("2026-01-22T14:30:00") == "2026-01-22 14:30"
+                    @test format_timestamp("") == ""
+                    @test format_timestamp("short") == "short"  # Handles invalid gracefully
+                end
+
+                @testset "state_css_class" begin
+                    @test state_css_class("UP") == "status-up"
+                    @test state_css_class("DOWN") == "status-down"
+                    @test state_css_class("MAINTENANCE") == "status-maintenance"
+                    @test state_css_class("UP_WITH_ISSUES") == "status-up-with-issues"
+                    @test state_css_class("UNKNOWN") == ""
+                end
+
+                @testset "state_display_text" begin
+                    @test state_display_text("UP") == "Up"
+                    @test state_display_text("DOWN") == "Down"
+                    @test state_display_text("MAINTENANCE") == "Maintenance"
+                    @test state_display_text("UP_WITH_ISSUES") == "Up with Issues"
+                    @test state_display_text("UNKNOWN") == "UNKNOWN"  # Fallback to raw value
+                end
+            end
+        end
     end
 
     @testset "Authentication" begin
