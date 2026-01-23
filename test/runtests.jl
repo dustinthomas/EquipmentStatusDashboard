@@ -871,5 +871,56 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             auth_core_file = joinpath(@__DIR__, "..", "src", "lib", "AuthCore.jl")
             @test isfile(auth_core_file)
         end
+
+        @testset "Login Views and Routes" begin
+            @testset "AuthController file exists" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl")
+                @test isfile(controller_file)
+
+                # Verify key functions are defined
+                controller_content = read(controller_file, String)
+                @test occursin("login_form", controller_content)
+                @test occursin("login", controller_content)
+                @test occursin("logout", controller_content)
+                @test occursin("module AuthController", controller_content)
+            end
+
+            @testset "Login view template exists" begin
+                view_file = joinpath(@__DIR__, "..", "src", "views", "auth", "login.jl.html")
+                @test isfile(view_file)
+
+                # Verify key elements are present
+                view_content = read(view_file, String)
+                @test occursin("<form", view_content)
+                @test occursin("action=\"/login\"", view_content)
+                @test occursin("method=\"POST\"", view_content)
+                @test occursin("username", view_content)
+                @test occursin("password", view_content)
+                @test occursin("type=\"submit\"", view_content)
+                @test occursin("error_message", view_content)
+            end
+
+            @testset "Auth routes defined" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                @test isfile(routes_file)
+
+                routes_content = read(routes_file, String)
+                @test occursin("\"/login\"", routes_content)
+                @test occursin("\"/logout\"", routes_content)
+                @test occursin("GET", routes_content)
+                @test occursin("POST", routes_content)
+            end
+
+            @testset "Login page styling" begin
+                css_file = joinpath(@__DIR__, "..", "public", "css", "qci.css")
+                css_content = read(css_file, String)
+
+                # Check for login-specific styles
+                @test occursin(".login-page", css_content)
+                @test occursin(".login-card", css_content)
+                @test occursin(".login-header", css_content)
+                @test occursin(".btn-block", css_content)
+            end
+        end
     end
 end
