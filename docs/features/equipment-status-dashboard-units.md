@@ -243,7 +243,7 @@ Add middleware to protect routes requiring authentication. Redirect unauthentica
 ## Milestone 4: Dashboard & Tool Views
 
 ### Unit 4.1: Dashboard Controller and View
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/dashboard-view`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/11
 **Depends on:** 3.3, 2.2
