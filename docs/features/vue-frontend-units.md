@@ -99,22 +99,23 @@ Create JSON API endpoint for fetching a single tool's details.
 ---
 
 ### Unit 1.5: Status Update API
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/vue-api-status-update`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/16
 **Depends on:** 1.3
 
 **Task:**
 Create JSON API endpoint for updating tool status.
 
 **Acceptance Criteria:**
-- [ ] `POST /api/tools/:id/status` accepts JSON `{state, issue_description, comment, eta_to_up}`
-- [ ] Creates StatusEvent record
-- [ ] Updates Tool's current_* fields
-- [ ] Sets current_status_updated_by_user_id to logged-in user
-- [ ] If state is UP, clears ETA
-- [ ] Returns updated tool JSON on success
-- [ ] Returns 400 with validation errors on invalid input
-- [ ] Protected by authentication (401 if not logged in)
+- [x] `POST /api/tools/:id/status` accepts JSON `{state, issue_description, comment, eta_to_up}`
+- [x] Creates StatusEvent record
+- [x] Updates Tool's current_* fields
+- [x] Sets current_status_updated_by_user_id to logged-in user
+- [x] If state is UP, clears ETA
+- [x] Returns updated tool JSON on success
+- [x] Returns 400 with validation errors on invalid input
+- [x] Protected by authentication (401 if not logged in)
 
 **Files to modify:**
 - `src/controllers/DashboardController.jl` - Add `api_update_status()` function
