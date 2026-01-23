@@ -243,7 +243,7 @@ Add middleware to protect routes requiring authentication. Redirect unauthentica
 ## Milestone 4: Dashboard & Tool Views
 
 ### Unit 4.1: Dashboard Controller and View
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/dashboard-view`
 **Depends on:** 3.3, 2.2
 
@@ -251,11 +251,11 @@ Add middleware to protect routes requiring authentication. Redirect unauthentica
 Create main dashboard showing all active tools with current status. Display as table with color-coded rows by state.
 
 **Acceptance Criteria:**
-- [ ] `GET /dashboard` renders tool list
-- [ ] Table shows: name, area, state, last updated, updated by, issue (truncated), ETA
-- [ ] Rows colored by state (green/yellow/orange/red)
-- [ ] Only active tools shown
-- [ ] Clicking row navigates to tool detail
+- [x] `GET /dashboard` renders tool list
+- [x] Table shows: name, area, state, last updated, updated by, issue (truncated), ETA
+- [x] Rows colored by state (green/yellow/orange/red)
+- [x] Only active tools shown
+- [x] Clicking row navigates to tool detail
 
 **Files to create/modify:**
 - `src/controllers/DashboardController.jl` - Dashboard handler
