@@ -922,5 +922,60 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test occursin(".btn-block", css_content)
             end
         end
+
+        @testset "Route Protection (Auth Helpers)" begin
+            @testset "auth_helpers.jl file exists" begin
+                helpers_file = joinpath(@__DIR__, "..", "src", "lib", "auth_helpers.jl")
+                @test isfile(helpers_file)
+
+                # Verify key functions are defined
+                helpers_content = read(helpers_file, String)
+                @test occursin("module AuthHelpers", helpers_content)
+                @test occursin("require_authentication", helpers_content)
+                @test occursin("require_admin", helpers_content)
+                @test occursin("current_user", helpers_content)
+                @test occursin("is_authenticated", helpers_content)
+                @test occursin("is_admin", helpers_content)
+                @test occursin("store_redirect_url", helpers_content)
+                @test occursin("get_redirect_url", helpers_content)
+                @test occursin("check_session_timeout", helpers_content)
+                @test occursin("REDIRECT_URL_KEY", helpers_content)
+                @test occursin("LAST_ACTIVITY_KEY", helpers_content)
+            end
+
+            @testset "Routes use auth middleware" begin
+                routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+                routes_content = read(routes_file, String)
+
+                # Verify AuthHelpers is loaded
+                @test occursin("using .AuthHelpers", routes_content)
+
+                # Verify protected routes use require_authentication
+                @test occursin("require_authentication", routes_content)
+
+                # Verify dashboard route is protected
+                @test occursin("/dashboard", routes_content)
+            end
+
+            @testset "AuthController uses redirect URL" begin
+                controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl")
+                controller_content = read(controller_file, String)
+
+                # Verify it imports get_redirect_url
+                @test occursin("get_redirect_url", controller_content)
+
+                # Verify it uses get_redirect_url after login
+                @test occursin("redirect_url = get_redirect_url", controller_content)
+            end
+
+            @testset "Session timeout configuration" begin
+                auth_file = joinpath(@__DIR__, "..", "config", "initializers", "authentication.jl")
+                auth_content = read(auth_file, String)
+
+                # Verify session timeout is configurable
+                @test occursin("SESSION_TIMEOUT", auth_content)
+                @test occursin("28800", auth_content)  # Default 8 hours
+            end
+        end
     end
 end

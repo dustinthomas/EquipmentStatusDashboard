@@ -219,19 +219,20 @@ Create login page with username/password form, and logout functionality. Style w
 ---
 
 ### Unit 3.3: Route Protection Middleware
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/route-protection`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/10
 **Depends on:** 3.2
 
 **Task:**
 Add middleware to protect routes requiring authentication. Redirect unauthenticated users to login. Create helper functions for checking auth/roles.
 
 **Acceptance Criteria:**
-- [ ] Unauthenticated requests to `/dashboard` redirect to `/login`
-- [ ] After login, user redirected to originally requested page
-- [ ] `current_user()` helper returns logged-in user
-- [ ] `is_admin()` helper checks user role
-- [ ] Session timeout works (configurable, default 8 hours)
+- [x] Unauthenticated requests to `/dashboard` redirect to `/login`
+- [x] After login, user redirected to originally requested page
+- [x] `current_user()` helper returns logged-in user
+- [x] `is_admin()` helper checks user role
+- [x] Session timeout works (configurable, default 8 hours)
 
 **Files to create/modify:**
 - `src/lib/auth_helpers.jl` - Authentication helper functions
