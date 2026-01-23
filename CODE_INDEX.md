@@ -45,6 +45,18 @@ end
 const STATES = ["UP", "UP_WITH_ISSUES", "MAINTENANCE", "DOWN"]
 ```
 
+### User roles
+```julia
+# Valid user roles (defined in src/models/User.jl)
+const VALID_ROLES = ["admin", "operator"]
+```
+
+### Database migrations
+Migrations are in `db/migrations/` with timestamp prefixes:
+```
+20260122195602_create_users.jl  # User table
+```
+
 ## Where to Find Things
 
 | If you need... | Look in... |
