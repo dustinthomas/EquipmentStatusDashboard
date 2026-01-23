@@ -129,7 +129,7 @@ Create the Tool model with denormalized current status fields. Fields: id, name,
 ---
 
 ### Unit 2.3: StatusEvent Model and Migration
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/status-event-model`
 **Depends on:** 2.1, 2.2
 
@@ -137,15 +137,15 @@ Create the Tool model with denormalized current status fields. Fields: id, name,
 Create the StatusEvent model for audit trail. Fields: id, tool_id (FK), state, issue_description, comment, eta_to_up, created_by_user_id (FK), created_at. Add index on (tool_id, created_at).
 
 **Acceptance Criteria:**
-- [ ] `src/models/StatusEvent.jl` exists with all required fields
-- [ ] Migration creates `status_events` table with FKs
-- [ ] Index exists on (tool_id, created_at)
-- [ ] Migration runs successfully
-- [ ] Can create/read StatusEvent records in REPL
+- [x] `src/models/StatusEvent.jl` exists with all required fields
+- [x] Migration creates `statusevents` table with FKs
+- [x] Index exists on tool_id and created_at (separate indexes)
+- [x] Migration runs successfully
+- [x] Can create/read StatusEvent records in REPL
 
 **Files to create/modify:**
 - `src/models/StatusEvent.jl` - StatusEvent model definition
-- `db/migrations/TIMESTAMP_create_status_events.jl` - Migration file
+- `db/migrations/20260122203749_create_status_events.jl` - Migration file
 
 ---
 
