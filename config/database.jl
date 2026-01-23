@@ -100,3 +100,39 @@ function database_path()
         return joinpath("db", "qci_status_dev.sqlite")
     end
 end
+
+"""
+    cleanup_test_database(db_path::String)
+
+Safely clean up a test database file, handling Windows-specific SQLite file locking.
+Disconnects the database, forces garbage collection, and retries deletion on Windows.
+"""
+function cleanup_test_database(db_path::String)
+    # Disconnect first
+    disconnect_database()
+
+    # Force garbage collection to release any lingering file handles
+    GC.gc()
+
+    # On Windows, SQLite may hold file locks briefly after disconnect
+    # Retry deletion with small delays
+    if Sys.iswindows() && isfile(db_path)
+        max_retries = 5
+        for attempt in 1:max_retries
+            try
+                rm(db_path; force=true)
+                return  # Success
+            catch e
+                if attempt < max_retries
+                    sleep(0.1 * attempt)  # Increasing delay
+                    GC.gc()  # Try GC again
+                else
+                    @warn "Could not delete test database after $max_retries attempts: $db_path" exception=e
+                end
+            end
+        end
+    else
+        # Non-Windows: simple deletion
+        isfile(db_path) && rm(db_path; force=true)
+    end
+end

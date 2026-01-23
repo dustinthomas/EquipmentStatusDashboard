@@ -91,11 +91,8 @@ ENV["SEARCHLIGHT_ENV"] = "test"
         result = SearchLight.query("SELECT 1 as test_col")
         @test size(result, 1) == 1  # 1 row in the DataFrame
 
-        # Test disconnect
-        disconnect_database()
-
-        # Cleanup test database
-        isfile(test_db_path) && rm(test_db_path)
+        # Cleanup test database (handles Windows SQLite file locking)
+        cleanup_test_database(test_db_path)
 
         # Reset DATABASE_PATH for other tests
         delete!(ENV, "DATABASE_PATH")
@@ -226,9 +223,8 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test !isempty(user.updated_at)  # Should have default timestamp
             end
 
-            # Cleanup
-            disconnect_database()
-            isfile(test_db_path) && rm(test_db_path)
+            # Cleanup (handles Windows SQLite file locking)
+            cleanup_test_database(test_db_path)
             delete!(ENV, "DATABASE_PATH")
         end
 
@@ -394,9 +390,8 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test !isempty(tool.updated_at)  # Should have default timestamp
             end
 
-            # Cleanup
-            disconnect_database()
-            isfile(test_db_path) && rm(test_db_path)
+            # Cleanup (handles Windows SQLite file locking)
+            cleanup_test_database(test_db_path)
             delete!(ENV, "DATABASE_PATH")
         end
 
@@ -600,9 +595,8 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test all(e -> e.state in ["DOWN", "UP"], events)
             end
 
-            # Cleanup
-            disconnect_database()
-            isfile(test_db_path) && rm(test_db_path)
+            # Cleanup (handles Windows SQLite file locking)
+            cleanup_test_database(test_db_path)
             delete!(ENV, "DATABASE_PATH")
         end
 
@@ -719,9 +713,8 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test tool_count == 5
             end
 
-            # Cleanup
-            disconnect_database()
-            isfile(test_db_path) && rm(test_db_path)
+            # Cleanup (handles Windows SQLite file locking)
+            cleanup_test_database(test_db_path)
             delete!(ENV, "DATABASE_PATH")
         end
     end
@@ -1083,9 +1076,8 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                     @test occursin("dir=asc", url)
                 end
 
-                # Cleanup
-                disconnect_database()
-                isfile(test_db_path) && rm(test_db_path)
+                # Cleanup (handles Windows SQLite file locking)
+                cleanup_test_database(test_db_path)
                 delete!(ENV, "DATABASE_PATH")
             end
 
@@ -1568,9 +1560,8 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test test_authenticate_user("inactiveuser", "password123") === nothing
             end
 
-            # Cleanup
-            disconnect_database()
-            isfile(test_db_path) && rm(test_db_path)
+            # Cleanup (handles Windows SQLite file locking)
+            cleanup_test_database(test_db_path)
             delete!(ENV, "DATABASE_PATH")
         end
 
