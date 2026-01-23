@@ -8,7 +8,8 @@ using SearchLight.Validation
 using SearchLight.Validation.Validators
 using Dates
 
-export User, VALID_ROLES, validate_role, is_admin, find_by_username, find_active_admins, update_last_login!
+export User, VALID_ROLES, validate_role, is_admin, is_active_user
+export find_by_username, find_active_admins, find_all_users, update_last_login!
 
 """Valid user roles for the system."""
 const VALID_ROLES = ["admin", "operator"]
@@ -21,7 +22,7 @@ Represents a user account in the system.
 # Fields
 - `id::DbId`: Primary key
 - `username::String`: Unique login identifier
-- `password_hash::String`: Argon2/bcrypt hashed password
+- `password_hash::String`: SHA256 hashed password (hex-encoded)
 - `name::String`: Display name
 - `role::String`: User role ("admin" or "operator")
 - `is_active::Bool`: Whether the user can log in
@@ -37,8 +38,8 @@ Represents a user account in the system.
     role::String = "operator"
     is_active::Bool = true
     last_login_at::String = ""
-    created_at::String = Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
-    updated_at::String = Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
+    created_at::String = Dates.format(Dates.now(Dates.UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
+    updated_at::String = Dates.format(Dates.now(Dates.UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
 end
 
 # Note: SearchLight auto-generates table name as "users" (pluralized, lowercase)
@@ -148,11 +149,20 @@ end
 Update the last_login_at timestamp for a user.
 """
 function update_last_login!(user::User)::User
-    timestamp = Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
+    timestamp = Dates.format(Dates.now(Dates.UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
     user.last_login_at = timestamp
     user.updated_at = timestamp
     SearchLight.save!(user)
     return user
+end
+
+"""
+    find_all_users() -> Vector{User}
+
+Find all users (active and inactive).
+"""
+function find_all_users()::Vector{User}
+    return SearchLight.all(User)
 end
 
 end # module Users

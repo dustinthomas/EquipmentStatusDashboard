@@ -732,7 +732,144 @@ ENV["SEARCHLIGHT_ENV"] = "test"
     end
 
     @testset "Authentication" begin
-        # TODO: Add auth tests
-        @test true  # Placeholder
+        @testset "AuthCore - Password Hashing" begin
+            # Include only the AuthCore module (no Genie dependencies)
+            include(joinpath(@__DIR__, "..", "src", "lib", "AuthCore.jl"))
+            using .AuthCore: hash_password, verify_password
+
+            @testset "hash_password function" begin
+                # Test hashing produces consistent results
+                hash1 = hash_password("testpassword")
+                hash2 = hash_password("testpassword")
+                @test hash1 == hash2
+
+                # Test hashing produces 64 hex characters (SHA256)
+                @test length(hash1) == 64
+
+                # Test different passwords produce different hashes
+                hash3 = hash_password("differentpassword")
+                @test hash1 != hash3
+
+                # Test empty password can be hashed (but shouldn't be used in practice)
+                hash_empty = hash_password("")
+                @test length(hash_empty) == 64
+            end
+
+            @testset "verify_password function" begin
+                password = "mysecretpassword"
+                hash = hash_password(password)
+
+                # Test correct password verifies
+                @test verify_password(password, hash) == true
+
+                # Test incorrect password fails
+                @test verify_password("wrongpassword", hash) == false
+
+                # Test empty password against non-empty hash
+                @test verify_password("", hash) == false
+
+                # Test invalid hash format (not 64 chars) returns false
+                @test verify_password(password, "shorthash") == false
+            end
+        end
+
+        @testset "User Authentication" begin
+            # Use a temp file for auth testing
+            test_db_path = joinpath(tempdir(), "test_auth_$(rand(UInt32)).sqlite")
+            ENV["DATABASE_PATH"] = test_db_path
+
+            # Include database configuration and connect
+            include(joinpath(@__DIR__, "..", "config", "database.jl"))
+            @test connect_database() == true
+
+            # Run user migration
+            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122195602_create_users.jl"))
+            CreateUsers.up()
+
+            # Include models and auth core
+            include(joinpath(@__DIR__, "..", "src", "models", "User.jl"))
+            include(joinpath(@__DIR__, "..", "src", "lib", "AuthCore.jl"))
+            using .Users: User, find_by_username
+            using .AuthCore: hash_password, verify_password
+
+            # Define authenticate_user function for testing
+            # (This mirrors the function in authentication.jl but without session dependencies)
+            function test_authenticate_user(username::String, password::String)
+                user = find_by_username(username)
+                if user === nothing
+                    return nothing
+                end
+                if !user.is_active
+                    return nothing
+                end
+                if !verify_password(password, user.password_hash)
+                    return nothing
+                end
+                return user
+            end
+
+            @testset "authenticate_user function" begin
+                test_user = User(
+                    username = "authtest",
+                    password_hash = hash_password("correctpassword"),
+                    name = "Auth Test User",
+                    role = "operator",
+                    is_active = true
+                )
+                SearchLight.save!(test_user)
+
+                # Test successful authentication
+                auth_result = test_authenticate_user("authtest", "correctpassword")
+                @test auth_result !== nothing
+                @test auth_result.username == "authtest"
+
+                # Test failed authentication - wrong password
+                @test test_authenticate_user("authtest", "wrongpassword") === nothing
+
+                # Test failed authentication - user not found
+                @test test_authenticate_user("nonexistent", "anypassword") === nothing
+
+                # Test inactive user cannot authenticate
+                inactive_user = User(
+                    username = "inactiveuser",
+                    password_hash = hash_password("password123"),
+                    name = "Inactive User",
+                    role = "operator",
+                    is_active = false
+                )
+                SearchLight.save!(inactive_user)
+                @test test_authenticate_user("inactiveuser", "password123") === nothing
+            end
+
+            # Cleanup
+            disconnect_database()
+            isfile(test_db_path) && rm(test_db_path)
+            delete!(ENV, "DATABASE_PATH")
+        end
+
+        @testset "Authentication Configuration" begin
+            # Test that authentication module file exists and has expected structure
+            auth_file = joinpath(@__DIR__, "..", "config", "initializers", "authentication.jl")
+            @test isfile(auth_file)
+
+            auth_content = read(auth_file, String)
+
+            # Verify key components are present
+            @test occursin("hash_password", auth_content)
+            @test occursin("verify_password", auth_content)
+            @test occursin("authenticate_user", auth_content)
+            @test occursin("login!", auth_content)
+            @test occursin("logout!", auth_content)
+            @test occursin("current_user", auth_content)
+            @test occursin("is_authenticated", auth_content)
+            @test occursin("is_admin", auth_content)
+            @test occursin("SESSION_TIMEOUT_SECONDS", auth_content)
+            @test occursin("AUTH_USER_ID_KEY", auth_content)
+            @test occursin("GenieSession", auth_content)
+
+            # Test AuthCore module exists
+            auth_core_file = joinpath(@__DIR__, "..", "src", "lib", "AuthCore.jl")
+            @test isfile(auth_core_file)
+        end
     end
 end
