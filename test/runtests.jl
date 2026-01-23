@@ -31,6 +31,47 @@ ENV["SEARCHLIGHT_ENV"] = "test"
         @test isfile(joinpath(@__DIR__, "..", "db", "connection.yml"))
     end
 
+    @testset "Layout and Styles" begin
+        # Test base layout template exists
+        layout_path = joinpath(@__DIR__, "..", "src", "views", "layouts", "app.jl.html")
+        @test isfile(layout_path)
+
+        # Test layout has required HTML5 structure
+        layout_content = read(layout_path, String)
+        @test occursin("<!DOCTYPE html>", layout_content)
+        @test occursin("<html", layout_content)
+        @test occursin("<head>", layout_content)
+        @test occursin("<body>", layout_content)
+
+        # Test layout includes Raleway font
+        @test occursin("Raleway", layout_content)
+        @test occursin("fonts.googleapis.com", layout_content)
+
+        # Test layout has navigation
+        @test occursin("<nav", layout_content)
+        @test occursin("navbar", layout_content)
+
+        # Test layout has footer with QCI copyright
+        @test occursin("<footer", layout_content)
+        @test occursin("QCI", layout_content)
+
+        # Test layout references QCI CSS
+        @test occursin("qci.css", layout_content)
+
+        # Test CSS files exist
+        @test isfile(joinpath(@__DIR__, "..", "public", "css", "qci.css"))
+        @test isfile(joinpath(@__DIR__, "..", "public", "css", "qci-theme.css"))
+
+        # Test CSS has QCI brand colors defined
+        css_content = read(joinpath(@__DIR__, "..", "public", "css", "qci-theme.css"), String)
+        @test occursin("#1E204B", css_content) || occursin("#1e204b", css_content)  # Dark navy
+        @test occursin("Raleway", css_content)  # Font family
+
+        # Test main CSS imports theme
+        main_css = read(joinpath(@__DIR__, "..", "public", "css", "qci.css"), String)
+        @test occursin("qci-theme.css", main_css)
+    end
+
     @testset "Database Configuration" begin
         # Use a temp file for testing
         test_db_path = joinpath(tempdir(), "test_qci_$(rand(UInt32)).sqlite")
