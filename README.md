@@ -35,9 +35,20 @@ julia --project=. -e "using Pkg; Pkg.instantiate()"
 # Run database migrations
 julia --project=. -e "using SearchLight; SearchLight.Migration.up()"
 
+# Seed database with initial data (admin user + sample tools)
+julia --project=. -e 'include("db/seeds/seed_data.jl"); seed!()'
+
 # Start development server
 julia --project=. -e "include(\"app.jl\")"
 ```
+
+#### Seed Data
+
+The seed script (`db/seeds/seed_data.jl`) creates:
+- **Admin user:** username=`admin`, password=`changeme` (change immediately!)
+- **Sample tools:** 5 fabrication tools with different states for testing
+
+The seed is idempotent - running it multiple times is safe.
 
 The app will be available at `http://localhost:8000`
 

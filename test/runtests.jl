@@ -605,6 +605,125 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             isfile(test_db_path) && rm(test_db_path)
             delete!(ENV, "DATABASE_PATH")
         end
+
+        @testset "Seed Data" begin
+            # Use a temp file for seed testing
+            test_db_path = joinpath(tempdir(), "test_seed_$(rand(UInt32)).sqlite")
+            ENV["DATABASE_PATH"] = test_db_path
+
+            # Include database configuration and connect
+            include(joinpath(@__DIR__, "..", "config", "database.jl"))
+            @test connect_database() == true
+
+            # Run migrations to create all tables
+            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122195602_create_users.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122201046_create_tools.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122203749_create_status_events.jl"))
+            CreateUsers.up()
+            CreateTools.up()
+            CreateStatusEvents.up()
+
+            # Include the seed data module
+            include(joinpath(@__DIR__, "..", "db", "seeds", "seed_data.jl"))
+
+            @testset "hash_password function" begin
+                # Test password hashing
+                hash1 = hash_password("changeme")
+                @test length(hash1) == 64  # SHA256 produces 64 hex characters
+                @test hash1 == hash_password("changeme")  # Same password = same hash
+
+                # Different passwords produce different hashes
+                hash2 = hash_password("different")
+                @test hash1 != hash2
+            end
+
+            @testset "seed_admin_user!" begin
+                # First run should create admin
+                admin = seed_admin_user!()
+                @test admin !== nothing
+                @test admin.username == "admin"
+                @test admin.name == "System Administrator"
+                @test admin.role == "admin"
+                @test admin.is_active == true
+                @test admin.password_hash == hash_password("changeme")
+
+                # Second run should be idempotent (skip existing)
+                admin2 = seed_admin_user!()
+                @test admin2 === nothing
+
+                # Verify only one admin exists
+                using .Users: find_by_username
+                existing = find_by_username("admin")
+                @test existing !== nothing
+                @test existing.id.value == admin.id.value
+            end
+
+            @testset "seed_sample_tools!" begin
+                # First run should create tools
+                tools = seed_sample_tools!()
+                @test length(tools) == 5
+
+                # Verify tool properties
+                tool_names = [t.name for t in tools]
+                @test "CVD-01" in tool_names
+                @test "ETCH-01" in tool_names
+                @test "LITH-01" in tool_names
+                @test "IMPL-01" in tool_names
+                @test "CLEAN-01" in tool_names
+
+                # Verify states
+                using .Tools: Tool
+                etch = SearchLight.find(Tool, SQLWhereExpression("name = ?", "ETCH-01"))
+                @test !isempty(etch)
+                @test first(etch).current_state == "DOWN"
+                @test first(etch).current_issue_description == "RF generator failure"
+
+                lith = SearchLight.find(Tool, SQLWhereExpression("name = ?", "LITH-01"))
+                @test !isempty(lith)
+                @test first(lith).current_state == "UP_WITH_ISSUES"
+
+                # Second run should be idempotent (skip existing)
+                tools2 = seed_sample_tools!()
+                @test length(tools2) == 0  # No new tools created
+
+                # Verify total count unchanged
+                all_tools = SearchLight.all(Tool)
+                @test length(all_tools) == 5
+            end
+
+            @testset "seed! main function" begin
+                # Clear database
+                using .Users: User
+                using .Tools: Tool
+                SearchLight.delete_all(Tool)
+                SearchLight.delete_all(User)
+
+                # Run full seed
+                seed!()
+
+                # Verify admin user created
+                admin = SearchLight.find(User, SQLWhereExpression("username = ?", "admin"))
+                @test length(admin) == 1
+
+                # Verify tools created
+                tools = SearchLight.all(Tool)
+                @test length(tools) == 5
+
+                # Verify idempotency - run again
+                seed!()
+
+                # Counts should remain the same
+                admin_count = length(SearchLight.find(User, SQLWhereExpression("username = ?", "admin")))
+                tool_count = length(SearchLight.all(Tool))
+                @test admin_count == 1
+                @test tool_count == 5
+            end
+
+            # Cleanup
+            disconnect_database()
+            isfile(test_db_path) && rm(test_db_path)
+            delete!(ENV, "DATABASE_PATH")
+        end
     end
 
     @testset "Controllers" begin

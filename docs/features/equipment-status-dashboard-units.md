@@ -151,7 +151,7 @@ Create the StatusEvent model for audit trail. Fields: id, tool_id (FK), state, i
 ---
 
 ### Unit 2.4: Seed Data
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/seed-data`
 **Depends on:** 2.1, 2.2, 2.3
 
@@ -159,11 +159,11 @@ Create the StatusEvent model for audit trail. Fields: id, tool_id (FK), state, i
 Create seed script with initial admin user and sample tools. Admin user: username="admin", password="changeme" (hashed). Sample tools: 3-5 fabrication tools with different areas and states.
 
 **Acceptance Criteria:**
-- [ ] `db/seeds/seed_data.jl` exists
-- [ ] Running seed creates admin user with hashed password
-- [ ] Running seed creates sample tools
-- [ ] Seed is idempotent (can run multiple times safely)
-- [ ] Seed script documented in README
+- [x] `db/seeds/seed_data.jl` exists
+- [x] Running seed creates admin user with hashed password
+- [x] Running seed creates sample tools
+- [x] Seed is idempotent (can run multiple times safely)
+- [x] Seed script documented in README
 
 **Files to create/modify:**
 - `db/seeds/seed_data.jl` - Seed script

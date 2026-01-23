@@ -1,24 +1,26 @@
 name = "EquipmentStatusDashboard"
 uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-authors = ["QCI <engineering@qci.com>"]
 version = "0.1.0"
+authors = ["QCI <engineering@qci.com>"]
 
 [deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Genie = "c43c736e-a2d1-11e8-161f-af95117fbd1e"
-SearchLight = "340e8cb6-72eb-11e8-37ce-c97ebeb32050"
-SearchLightSQLite = "21a827c4-482a-11ea-3a19-4d2243a4a2c5"
 GenieAuthentication = "e115e502-7e3a-11e9-29b2-aba8be6c6778"
 GenieAuthorisation = "af3f74f6-a62a-4aa2-b188-7ea1105ee18f"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
-Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+SearchLight = "340e8cb6-72eb-11e8-37ce-c97ebeb32050"
+SearchLightSQLite = "21a827c4-482a-11ea-3a19-4d2243a4a2c5"
+
+[compat]
+SHA = "0.7.0"
+julia = "1.10"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test"]
-
-[compat]
-julia = "1.10"
