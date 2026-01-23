@@ -13,17 +13,21 @@ using Logging
 # Import models
 include(joinpath(@__DIR__, "..", "models", "Tool.jl"))
 include(joinpath(@__DIR__, "..", "models", "User.jl"))
-using .Tools: Tool, find_active_tools, VALID_STATES
+using .Tools: Tool, find_active_tools, VALID_STATES, validate_state, update_current_status!
 using .Users: User
 
 # Import auth helpers
 using Main.AuthHelpers: current_user
 
+# Import StatusEvent model
+include(joinpath(@__DIR__, "..", "models", "StatusEvent.jl"))
+using .StatusEvents: StatusEvent, create_status_event!
+
 # Import API helpers for consistent error responses
 include(joinpath(@__DIR__, "..", "lib", "api_helpers.jl"))
-using .ApiHelpers: api_success, api_error
+using .ApiHelpers: api_success, api_error, api_bad_request, api_not_found
 
-export index, filter_table, state_display_text, api_index, api_show
+export index, filter_table, state_display_text, api_index, api_show, api_update_status
 
 # Valid sort columns and their field mappings
 const SORT_COLUMNS = Dict(
@@ -588,6 +592,139 @@ function api_show()
     end
 
     # Prepare tool data for JSON response
+    tool_data = Dict(
+        "id" => tool.id.value,
+        "name" => tool.name,
+        "area" => tool.area,
+        "bay" => tool.bay,
+        "criticality" => tool.criticality,
+        "state" => tool.current_state,
+        "state_display" => state_display_text(tool.current_state),
+        "state_class" => state_css_class(tool.current_state),
+        "issue_description" => tool.current_issue_description,
+        "comment" => tool.current_comment,
+        "eta_to_up" => tool.current_eta_to_up,
+        "eta_to_up_formatted" => format_timestamp(tool.current_eta_to_up),
+        "status_updated_at" => tool.current_status_updated_at,
+        "status_updated_at_formatted" => format_timestamp(tool.current_status_updated_at),
+        "status_updated_by" => get_user_name(tool.current_status_updated_by_user_id),
+        "is_active" => tool.is_active,
+        "created_at" => tool.created_at,
+        "updated_at" => tool.updated_at
+    )
+
+    api_success(Dict("tool" => tool_data))
+end
+
+"""
+    api_update_status()
+
+JSON API endpoint for updating tool status.
+POST /api/tools/:id/status
+
+Request body (JSON):
+- state: Required. One of: UP, UP_WITH_ISSUES, MAINTENANCE, DOWN
+- issue_description: Optional. Description of the issue
+- comment: Optional. Additional comment
+- eta_to_up: Optional. Estimated time to UP (ISO 8601 datetime). Cleared if state is UP.
+
+Creates a StatusEvent record for audit trail and updates Tool's current_* fields.
+Sets current_status_updated_by_user_id to the logged-in user.
+
+Returns updated tool JSON on success.
+Returns 400 with validation errors on invalid input.
+Returns 404 if tool not found or inactive.
+"""
+function api_update_status()
+    # Get the tool ID from the route parameters
+    params = Genie.Router.params()
+    id_str = get(params, :id, "")
+
+    # Validate ID parameter
+    local id::Int
+    try
+        id = parse(Int, string(id_str))
+    catch
+        return api_bad_request("Invalid tool ID")
+    end
+
+    # Find the tool
+    tool = SearchLight.findone(Tool; id = id)
+
+    # Check if tool exists and is active
+    if tool === nothing
+        return api_not_found("Tool not found")
+    end
+
+    if !tool.is_active
+        return api_not_found("Tool not found")
+    end
+
+    # Parse JSON request body
+    local payload::Dict
+    try
+        payload = Genie.Requests.jsonpayload()
+        if payload === nothing
+            return api_bad_request("Request body is required")
+        end
+    catch e
+        @error "Failed to parse JSON payload" exception=e
+        return api_bad_request("Invalid JSON payload")
+    end
+
+    # Extract and validate state (required)
+    state = get(payload, "state", nothing)
+    if state === nothing || isempty(string(state))
+        return api_bad_request("State is required")
+    end
+
+    state = string(state)
+    if !validate_state(state)
+        return api_bad_request("Invalid state. Must be one of: $(join(VALID_STATES, ", "))")
+    end
+
+    # Extract optional fields
+    issue_description = string(get(payload, "issue_description", ""))
+    comment = string(get(payload, "comment", ""))
+    eta_to_up = string(get(payload, "eta_to_up", ""))
+
+    # Get current user
+    user = current_user()
+    if user === nothing
+        return api_error("User session invalid", status=500)
+    end
+
+    # Create StatusEvent for audit trail
+    try
+        create_status_event!(
+            tool.id,
+            user.id,
+            state;
+            issue_description = issue_description,
+            comment = comment,
+            eta_to_up = eta_to_up
+        )
+    catch e
+        @error "Failed to create status event" exception=e
+        return api_error("Failed to create status event")
+    end
+
+    # Update tool's current status fields
+    try
+        update_current_status!(
+            tool,
+            state,
+            user.id;
+            issue_description = issue_description,
+            comment = comment,
+            eta_to_up = eta_to_up
+        )
+    catch e
+        @error "Failed to update tool status" exception=e
+        return api_error("Failed to update tool status")
+    end
+
+    # Prepare updated tool data for JSON response
     tool_data = Dict(
         "id" => tool.id.value,
         "name" => tool.name,
