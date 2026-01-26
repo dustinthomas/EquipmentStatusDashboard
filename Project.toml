@@ -13,11 +13,14 @@ GenieSessionFileSession = "5c4fdc26-39e3-47cf-9034-e533e09961c2"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+MCPRepl = "b62cb57a-788d-40b5-9d64-84a1dfc37ce3"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 SearchLight = "340e8cb6-72eb-11e8-37ce-c97ebeb32050"
 SearchLightSQLite = "21a827c4-482a-11ea-3a19-4d2243a4a2c5"
 
 [compat]
+MCPRepl = "0.1.0"
 SHA = "0.7.0"
 julia = "1.10"
 
