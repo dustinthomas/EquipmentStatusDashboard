@@ -64,6 +64,23 @@ docker build -t qci-status:latest .
 docker run -d -p 8000:8000 -v qci-data:/data qci-status:latest
 ```
 
+## Julia REPL
+
+A Julia REPL is available via the `julia-repl` MCP server. **Always use this instead of `julia` in bash.**
+
+**Use the REPL for:**
+- Running code in the project environment (already configured with `--project=.`)
+- Database migrations (`using SearchLight; SearchLight.Migration.up()`)
+- Running tests (`using Pkg; Pkg.test()`)
+- Experimenting with small code snippets
+
+**Rules:**
+- Before assuming anything about the environment, check first: `Pkg.status()`, `versioninfo()`, or use `investigate_environment` tool
+- Don't invent APIs—use `@doc function_name` or read existing code in `src/`, `config/`, `db/`
+- Use `let` blocks for temporary computations to avoid polluting the shared namespace
+- Don't modify the environment (`Pkg.add`, `Pkg.activate`)—ask the user if dependencies are missing
+- Revise.jl is active: edits to `src/` files are picked up automatically (except struct/const changes)
+
 ## Document Hierarchy
 
 This project uses a three-tier documentation system:
