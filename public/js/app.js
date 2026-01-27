@@ -5,7 +5,7 @@
  * No build step required - runs directly in the browser.
  */
 
-const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+const { createApp, ref, reactive, computed, onMounted, watch, nextTick } = Vue;
 
 // ========================================
 // Application State
@@ -47,6 +47,15 @@ const app = createApp({
             },
             loading: false,
             error: null
+        });
+
+        // ========================================
+        // Filter State
+        // ========================================
+        const filters = reactive({
+            state: '',
+            area: '',
+            search: ''
         });
 
         // ========================================
@@ -176,15 +185,59 @@ const app = createApp({
         // ========================================
 
         /**
+         * Build URL query string from filter state.
+         * @returns {string} Query string (including ? prefix if non-empty)
+         */
+        function buildFilterQueryString() {
+            const params = new URLSearchParams();
+
+            if (filters.state) {
+                params.set('state', filters.state);
+            }
+            if (filters.area) {
+                params.set('area', filters.area);
+            }
+            if (filters.search.trim()) {
+                params.set('search', filters.search.trim());
+            }
+
+            const queryString = params.toString();
+            return queryString ? `?${queryString}` : '';
+        }
+
+        /**
+         * Update browser URL with current filter state.
+         * Uses replaceState to avoid creating history entries for each filter change.
+         */
+        function updateUrlWithFilters() {
+            const queryString = buildFilterQueryString();
+            const newUrl = window.location.pathname + queryString;
+            window.history.replaceState({}, '', newUrl);
+        }
+
+        /**
+         * Read filter state from URL query parameters.
+         * Called on app load to restore filters from URL.
+         */
+        function readFiltersFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+
+            filters.state = params.get('state') || '';
+            filters.area = params.get('area') || '';
+            filters.search = params.get('search') || '';
+        }
+
+        /**
          * Fetch tools from the API.
-         * Calls /api/tools with optional query parameters.
+         * Calls /api/tools with filter query parameters.
          */
         async function fetchTools() {
             dashboard.loading = true;
             dashboard.error = null;
 
             try {
-                const response = await fetch('/api/tools', {
+                const queryString = buildFilterQueryString();
+                const response = await fetch(`/api/tools${queryString}`, {
                     method: 'GET',
                     credentials: 'same-origin',
                     headers: {
@@ -212,6 +265,35 @@ const app = createApp({
                 dashboard.loading = false;
             }
         }
+
+        /**
+         * Apply current filters and fetch tools.
+         * Updates URL to reflect filter state.
+         */
+        function applyFilters() {
+            updateUrlWithFilters();
+            fetchTools();
+        }
+
+        /**
+         * Clear all filters and fetch tools.
+         * Resets URL to base path.
+         */
+        function clearFilters() {
+            filters.state = '';
+            filters.area = '';
+            filters.search = '';
+            updateUrlWithFilters();
+            fetchTools();
+        }
+
+        /**
+         * Check if any filters are currently active.
+         * @returns {boolean} True if any filter is set
+         */
+        const hasActiveFilters = computed(() => {
+            return filters.state !== '' || filters.area !== '' || filters.search.trim() !== '';
+        });
 
         /**
          * Handle clicking on a tool row.
@@ -244,6 +326,8 @@ const app = createApp({
 
         // Check authentication status when app mounts
         onMounted(() => {
+            // Read filters from URL before checking auth
+            readFiltersFromUrl();
             checkAuth();
         });
 
@@ -276,15 +360,19 @@ const app = createApp({
             auth,
             loginForm,
             dashboard,
+            filters,
 
             // Computed
             isAdmin,
             userName,
+            hasActiveFilters,
 
             // Methods
             handleLogin,
             handleLogout,
             fetchTools,
+            applyFilters,
+            clearFilters,
             handleToolClick,
             getRowStatusClass
         };
@@ -407,6 +495,70 @@ const app = createApp({
                             </button>
                         </div>
 
+                        <!-- Filter Card -->
+                        <div class="card filter-card">
+                            <form class="filter-form" @submit.prevent="applyFilters">
+                                <div class="filter-row">
+                                    <!-- State Filter -->
+                                    <div class="filter-group">
+                                        <label class="filter-label" for="filter-state">Status</label>
+                                        <select
+                                            id="filter-state"
+                                            v-model="filters.state"
+                                            class="form-control filter-select"
+                                        >
+                                            <option value="">All States</option>
+                                            <option v-for="state in dashboard.meta.states" :key="state" :value="state">
+                                                {{ state === 'UP' ? 'Up' : state === 'UP_WITH_ISSUES' ? 'Up with Issues' : state === 'MAINTENANCE' ? 'Maintenance' : state === 'DOWN' ? 'Down' : state }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Area Filter -->
+                                    <div class="filter-group">
+                                        <label class="filter-label" for="filter-area">Area</label>
+                                        <select
+                                            id="filter-area"
+                                            v-model="filters.area"
+                                            class="form-control filter-select"
+                                        >
+                                            <option value="">All Areas</option>
+                                            <option v-for="area in dashboard.meta.areas" :key="area" :value="area">
+                                                {{ area }}
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Search Input -->
+                                    <div class="filter-group filter-group-search">
+                                        <label class="filter-label" for="filter-search">Search</label>
+                                        <input
+                                            type="text"
+                                            id="filter-search"
+                                            v-model="filters.search"
+                                            class="form-control filter-input"
+                                            placeholder="Search by name..."
+                                        />
+                                    </div>
+
+                                    <!-- Filter Buttons -->
+                                    <div class="filter-group filter-group-buttons">
+                                        <button type="submit" class="btn btn-primary" :disabled="dashboard.loading">
+                                            Apply
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="btn btn-secondary"
+                                            @click="clearFilters"
+                                            :disabled="dashboard.loading || !hasActiveFilters"
+                                        >
+                                            Clear
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
                         <!-- Loading State -->
                         <div v-if="dashboard.loading" class="card" style="text-align: center; padding: 60px 20px;">
                             <div class="loading-spinner-inline"></div>
@@ -418,7 +570,13 @@ const app = createApp({
                             <!-- Empty State -->
                             <div v-if="dashboard.tools.length === 0" style="text-align: center; padding: 60px 20px;">
                                 <p style="color: #666; font-size: 1.1rem;">No tools found</p>
-                                <p style="color: #999; font-size: 0.9rem; margin-top: 10px;">
+                                <p v-if="hasActiveFilters" style="color: #999; font-size: 0.9rem; margin-top: 10px;">
+                                    No tools match the current filters.
+                                    <button class="btn btn-sm btn-secondary" style="margin-left: 8px;" @click="clearFilters">
+                                        Clear Filters
+                                    </button>
+                                </p>
+                                <p v-else style="color: #999; font-size: 0.9rem; margin-top: 10px;">
                                     There are no equipment tools to display.
                                 </p>
                             </div>

@@ -10,18 +10,13 @@ using Genie.Requests: getpayload
 using SearchLight
 using Logging
 
-# Import models
-include(joinpath(@__DIR__, "..", "models", "Tool.jl"))
-include(joinpath(@__DIR__, "..", "models", "User.jl"))
-using .Tools: Tool, find_active_tools, VALID_STATES, validate_state, update_current_status!
-using .Users: User
+# Import models from parent App module
+import ..App: Tool, User, StatusEvent
+using ..App.Tools: find_active_tools, VALID_STATES, validate_state, update_current_status!
+using ..App.StatusEvents: create_status_event!, find_by_tool_id, find_by_tool_id_in_range
 
-# Import auth helpers
-using Main.AuthHelpers: current_user
-
-# Import StatusEvent model
-include(joinpath(@__DIR__, "..", "models", "StatusEvent.jl"))
-using .StatusEvents: StatusEvent, create_status_event!, find_by_tool_id, find_by_tool_id_in_range
+# Import auth helpers (also part of App module)
+using ..App.AuthHelpers: current_user
 
 # Import API helpers for consistent error responses
 include(joinpath(@__DIR__, "..", "lib", "api_helpers.jl"))

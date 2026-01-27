@@ -1900,5 +1900,79 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             @test occursin("dashboard.meta.total", app_js_content)
             @test occursin("dashboard.meta.filtered", app_js_content)
         end
+
+        @testset "Unit 3.2: Filtering" begin
+            app_js_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+            app_js_content = read(app_js_file, String)
+
+            # Verify filter state exists
+            @test occursin("const filters = reactive({", app_js_content)
+            @test occursin("state: ''", app_js_content)
+            @test occursin("area: ''", app_js_content)
+            @test occursin("search: ''", app_js_content)
+
+            # Verify filter methods exist
+            @test occursin("function applyFilters()", app_js_content)
+            @test occursin("function clearFilters()", app_js_content)
+            @test occursin("function buildFilterQueryString()", app_js_content)
+            @test occursin("function updateUrlWithFilters()", app_js_content)
+            @test occursin("function readFiltersFromUrl()", app_js_content)
+
+            # Verify hasActiveFilters computed property
+            @test occursin("const hasActiveFilters = computed(() =>", app_js_content)
+
+            # Verify filter UI elements in template
+            @test occursin("filter-card", app_js_content)
+            @test occursin("filter-form", app_js_content)
+            @test occursin("@submit.prevent=\"applyFilters\"", app_js_content)
+
+            # Verify state dropdown
+            @test occursin("id=\"filter-state\"", app_js_content)
+            @test occursin("v-model=\"filters.state\"", app_js_content)
+            @test occursin("All States", app_js_content)
+            @test occursin("v-for=\"state in dashboard.meta.states\"", app_js_content)
+
+            # Verify area dropdown
+            @test occursin("id=\"filter-area\"", app_js_content)
+            @test occursin("v-model=\"filters.area\"", app_js_content)
+            @test occursin("All Areas", app_js_content)
+            @test occursin("v-for=\"area in dashboard.meta.areas\"", app_js_content)
+
+            # Verify search input
+            @test occursin("id=\"filter-search\"", app_js_content)
+            @test occursin("v-model=\"filters.search\"", app_js_content)
+            @test occursin("Search by name...", app_js_content)
+
+            # Verify Apply button
+            @test occursin("type=\"submit\"", app_js_content)
+            @test occursin("Apply", app_js_content)
+
+            # Verify Clear button
+            @test occursin("@click=\"clearFilters\"", app_js_content)
+            @test occursin(":disabled=\"dashboard.loading || !hasActiveFilters\"", app_js_content)
+            @test occursin("Clear", app_js_content)
+
+            # Verify URL query string handling
+            @test occursin("new URLSearchParams()", app_js_content)
+            @test occursin("window.history.replaceState", app_js_content)
+            @test occursin("window.location.search", app_js_content)
+
+            # Verify filters are applied on fetchTools
+            @test occursin("buildFilterQueryString()", app_js_content)
+            @test occursin("/api/tools\${queryString}", app_js_content)
+
+            # Verify filters are read from URL on mount
+            @test occursin("readFiltersFromUrl()", app_js_content)
+
+            # Verify empty state with filters message
+            @test occursin("No tools match the current filters", app_js_content)
+            @test occursin("v-if=\"hasActiveFilters\"", app_js_content)
+
+            # Verify filters and methods are exposed in return
+            @test occursin("filters,", app_js_content)
+            @test occursin("hasActiveFilters,", app_js_content)
+            @test occursin("applyFilters,", app_js_content)
+            @test occursin("clearFilters,", app_js_content)
+        end
     end
 end

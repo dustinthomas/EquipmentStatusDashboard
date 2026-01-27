@@ -5,16 +5,8 @@ using Genie.Responses
 using Genie.Renderer: redirect
 using Genie.Renderer.Json: json
 
-# Load auth helpers
-include(joinpath(@__DIR__, "..", "src", "lib", "auth_helpers.jl"))
-using .AuthHelpers
-
-# Load controllers
-include(joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl"))
-using .AuthController
-
-include(joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl"))
-using .DashboardController
+# Import modules from App (already loaded by App.jl)
+using ..App: AuthHelpers, AuthController, DashboardController
 
 # Health check endpoint - returns JSON status for monitoring
 route("/health", method = GET) do
