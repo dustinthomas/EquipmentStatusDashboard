@@ -97,10 +97,11 @@ User → Vue App → JSON API → Controller → Model → SQLite
 - **Units:** See `docs/features/vue-frontend-units.md`
 - Progressive migration from server-rendered templates to Vue.js SPA
 - Sub-milestones:
-  - 7.1: JSON API Layer (Tools API implemented, Auth API pending)
-  - 7.2: Vue App Shell (pending)
-  - 7.3: Dashboard Implementation (pending)
-  - 7.4: Cleanup & Testing (pending)
+  - 7.1: JSON API Layer (Complete)
+  - 7.2: Vue App Shell (Complete)
+  - 7.3: Dashboard Implementation (Complete)
+  - 7.4: Tool Management Views (Complete)
+  - 7.5: Cleanup & Testing (Pending)
 
 ## Risks & Mitigations
 

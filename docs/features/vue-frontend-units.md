@@ -313,8 +313,9 @@ Implement status update form as modal or inline component.
 ---
 
 ### Unit 4.3: Tool History View
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/vue-history`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/27
 **Depends on:** 1.6, 4.1
 
 **Task:**
