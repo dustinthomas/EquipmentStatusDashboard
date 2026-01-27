@@ -242,7 +242,7 @@ Implement filter controls (state, area, search).
 ---
 
 ### Unit 3.3: Sorting
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/vue-dashboard-sort`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/24
 **Depends on:** 3.1
