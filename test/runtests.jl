@@ -1902,7 +1902,8 @@ ENV["SEARCHLIGHT_ENV"] = "test"
         end
 
         @testset "Unit 3.2: Filtering" begin
-            app_js_content = read(joinpath(public_dir, "js", "app.js"), String)
+            app_js_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+            app_js_content = read(app_js_file, String)
 
             # Verify filter state exists
             @test occursin("const filters = reactive({", app_js_content)
