@@ -241,9 +241,48 @@
    Sortable Table Headers
    ======================================== */
 .sortable-header {
-    padding: 0 !important;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+    position: relative;
 }
 
+.sortable-header:hover {
+    background-color: var(--qci-light-navy);
+}
+
+/* Sort indicator arrow */
+.sort-indicator {
+    display: inline-block;
+    margin-left: 6px;
+    opacity: 0.4;
+    font-size: 0.75rem;
+}
+
+.sort-indicator::after {
+    content: '\2195'; /* Up-down arrow for unsorted */
+}
+
+/* Active sort states */
+.sortable-header.sorted-asc,
+.sortable-header.sorted-desc {
+    background-color: var(--qci-light-navy);
+}
+
+.sortable-header.sorted-asc .sort-indicator,
+.sortable-header.sorted-desc .sort-indicator {
+    opacity: 1;
+}
+
+.sortable-header.sorted-asc .sort-indicator::after {
+    content: '\2191'; /* Up arrow */
+}
+
+.sortable-header.sorted-desc .sort-indicator::after {
+    content: '\2193'; /* Down arrow */
+}
+
+/* Legacy link-based sorting (for server-rendered templates) */
 .sortable-header .sort-link {
     display: flex;
     align-items: center;
@@ -260,11 +299,6 @@
 
 .sortable-header .sort-link.active {
     background-color: var(--qci-light-navy);
-}
-
-.sort-indicator {
-    font-size: 0.75rem;
-    opacity: 0.8;
 }
 
 /* Row background colors based on status */

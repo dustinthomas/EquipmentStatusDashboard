@@ -59,6 +59,23 @@ const app = createApp({
         });
 
         // ========================================
+        // Sort State
+        // ========================================
+        const sort = reactive({
+            column: 'state',   // Default sort by state (DOWN first)
+            direction: 'asc'   // Default ascending
+        });
+
+        // Columns that can be sorted and their API field names
+        const sortableColumns = {
+            name: 'name',
+            area: 'area',
+            state: 'state',
+            eta: 'eta',
+            updated: 'updated'
+        };
+
+        // ========================================
         // Authentication Methods
         // ========================================
 
@@ -185,7 +202,7 @@ const app = createApp({
         // ========================================
 
         /**
-         * Build URL query string from filter state.
+         * Build URL query string from filter and sort state.
          * @returns {string} Query string (including ? prefix if non-empty)
          */
         function buildFilterQueryString() {
@@ -199,6 +216,14 @@ const app = createApp({
             }
             if (filters.search.trim()) {
                 params.set('search', filters.search.trim());
+            }
+
+            // Add sort params (include even if defaults to maintain URL state)
+            if (sort.column && sort.column !== 'state') {
+                params.set('sort', sort.column);
+            }
+            if (sort.direction && sort.direction !== 'asc') {
+                params.set('dir', sort.direction);
             }
 
             const queryString = params.toString();
@@ -216,8 +241,8 @@ const app = createApp({
         }
 
         /**
-         * Read filter state from URL query parameters.
-         * Called on app load to restore filters from URL.
+         * Read filter and sort state from URL query parameters.
+         * Called on app load to restore filters and sort from URL.
          */
         function readFiltersFromUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -225,6 +250,10 @@ const app = createApp({
             filters.state = params.get('state') || '';
             filters.area = params.get('area') || '';
             filters.search = params.get('search') || '';
+
+            // Read sort params (with defaults)
+            sort.column = params.get('sort') || 'state';
+            sort.direction = params.get('dir') || 'asc';
         }
 
         /**
@@ -277,7 +306,7 @@ const app = createApp({
 
         /**
          * Clear all filters and fetch tools.
-         * Resets URL to base path.
+         * Resets URL to base path but preserves sort state.
          */
         function clearFilters() {
             filters.state = '';
@@ -285,6 +314,59 @@ const app = createApp({
             filters.search = '';
             updateUrlWithFilters();
             fetchTools();
+        }
+
+        /**
+         * Handle click on a sortable column header.
+         * Toggles direction if same column, otherwise sorts ascending.
+         * @param {string} column - The column to sort by
+         */
+        function handleSortClick(column) {
+            if (!sortableColumns[column]) {
+                return; // Not a sortable column
+            }
+
+            if (sort.column === column) {
+                // Same column - toggle direction
+                sort.direction = sort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                // New column - set to ascending
+                sort.column = column;
+                sort.direction = 'asc';
+            }
+
+            updateUrlWithFilters();
+            fetchTools();
+        }
+
+        /**
+         * Check if a column is sortable.
+         * @param {string} column - Column name to check
+         * @returns {boolean} True if column can be sorted
+         */
+        function isSortable(column) {
+            return !!sortableColumns[column];
+        }
+
+        /**
+         * Check if a column is the currently sorted column.
+         * @param {string} column - Column name to check
+         * @returns {boolean} True if this is the active sort column
+         */
+        function isSortedBy(column) {
+            return sort.column === column;
+        }
+
+        /**
+         * Get the CSS class for sort indicator on a column header.
+         * @param {string} column - Column name
+         * @returns {string} CSS class for the sort indicator
+         */
+        function getSortClass(column) {
+            if (!isSortedBy(column)) {
+                return 'sortable';
+            }
+            return sort.direction === 'asc' ? 'sorted-asc' : 'sorted-desc';
         }
 
         /**
@@ -361,6 +443,7 @@ const app = createApp({
             loginForm,
             dashboard,
             filters,
+            sort,
 
             // Computed
             isAdmin,
@@ -374,7 +457,11 @@ const app = createApp({
             applyFilters,
             clearFilters,
             handleToolClick,
-            getRowStatusClass
+            getRowStatusClass,
+            handleSortClick,
+            isSortable,
+            isSortedBy,
+            getSortClass
         };
     },
 
@@ -586,12 +673,52 @@ const app = createApp({
                                 <table class="table dashboard-table">
                                     <thead>
                                         <tr>
-                                            <th>Name</th>
-                                            <th>Area</th>
-                                            <th>Status</th>
+                                            <th
+                                                class="sortable-header"
+                                                :class="getSortClass('name')"
+                                                @click="handleSortClick('name')"
+                                                title="Sort by name"
+                                            >
+                                                Name
+                                                <span class="sort-indicator"></span>
+                                            </th>
+                                            <th
+                                                class="sortable-header"
+                                                :class="getSortClass('area')"
+                                                @click="handleSortClick('area')"
+                                                title="Sort by area"
+                                            >
+                                                Area
+                                                <span class="sort-indicator"></span>
+                                            </th>
+                                            <th
+                                                class="sortable-header"
+                                                :class="getSortClass('state')"
+                                                @click="handleSortClick('state')"
+                                                title="Sort by status (Down first)"
+                                            >
+                                                Status
+                                                <span class="sort-indicator"></span>
+                                            </th>
                                             <th>Issue</th>
-                                            <th>ETA</th>
-                                            <th>Updated</th>
+                                            <th
+                                                class="sortable-header"
+                                                :class="getSortClass('eta')"
+                                                @click="handleSortClick('eta')"
+                                                title="Sort by ETA"
+                                            >
+                                                ETA
+                                                <span class="sort-indicator"></span>
+                                            </th>
+                                            <th
+                                                class="sortable-header"
+                                                :class="getSortClass('updated')"
+                                                @click="handleSortClick('updated')"
+                                                title="Sort by last updated"
+                                            >
+                                                Updated
+                                                <span class="sort-indicator"></span>
+                                            </th>
                                             <th>Updated By</th>
                                         </tr>
                                     </thead>
