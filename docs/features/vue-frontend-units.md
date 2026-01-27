@@ -220,7 +220,7 @@ Implement the main tools table with data fetching.
 ---
 
 ### Unit 3.2: Filtering
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/vue-dashboard-filter`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/23
 **Depends on:** 3.1
