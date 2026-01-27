@@ -290,7 +290,7 @@ Implement tool detail view showing full status and actions.
 ---
 
 ### Unit 4.2: Status Update Form
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/vue-status-update`
 **Depends on:** 1.5, 4.1
 
@@ -298,13 +298,13 @@ Implement tool detail view showing full status and actions.
 Implement status update form as modal or inline component.
 
 **Acceptance Criteria:**
-- [ ] Form with: state dropdown (required), issue (optional), comment (optional), ETA (optional)
-- [ ] State dropdown shows all valid states with color indicators
-- [ ] ETA field hidden/cleared when state is UP
-- [ ] Submit calls `/api/tools/:id/status`
-- [ ] Shows validation errors from API
-- [ ] Success updates tool detail view
-- [ ] Cancel button closes form without saving
+- [x] Form with: state dropdown (required), issue (optional), comment (optional), ETA (optional)
+- [x] State dropdown shows all valid states with color indicators
+- [x] ETA field hidden/cleared when state is UP
+- [x] Submit calls `/api/tools/:id/status`
+- [x] Shows validation errors from API
+- [x] Success updates tool detail view
+- [x] Cancel button closes form without saving
 
 **Files to modify:**
 - `public/js/app.js` - Add status update component
