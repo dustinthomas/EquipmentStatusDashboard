@@ -242,20 +242,21 @@ Implement filter controls (state, area, search).
 ---
 
 ### Unit 3.3: Sorting
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/vue-dashboard-sort`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/24
 **Depends on:** 3.1
 
 **Task:**
 Implement column sorting.
 
 **Acceptance Criteria:**
-- [ ] Clickable column headers for sortable columns
-- [ ] Toggle asc/desc on repeated clicks
-- [ ] Sort indicator (arrow) on active column
-- [ ] State column sorts by priority (DOWN first)
-- [ ] Sort params included in API call
-- [ ] Sort state reflected in URL query string
+- [x] Clickable column headers for sortable columns
+- [x] Toggle asc/desc on repeated clicks
+- [x] Sort indicator (arrow) on active column
+- [x] State column sorts by priority (DOWN first)
+- [x] Sort params included in API call
+- [x] Sort state reflected in URL query string
 
 **Files to modify:**
 - `public/js/app.js` - Add sort state and handlers
