@@ -5,7 +5,7 @@
  * No build step required - runs directly in the browser.
  */
 
-const { createApp, ref, reactive, computed, onMounted, watch, nextTick } = Vue;
+const { createApp, ref, reactive, computed, onMounted, watch, nextTick, onUnmounted } = Vue;
 
 // ========================================
 // Application State
@@ -64,6 +64,22 @@ const app = createApp({
         const sort = reactive({
             column: 'state',   // Default sort by state (DOWN first)
             direction: 'asc'   // Default ascending
+        });
+
+        // ========================================
+        // View/Navigation State
+        // ========================================
+        // currentView: 'dashboard' | 'tool-detail'
+        const currentView = ref('dashboard');
+        const selectedToolId = ref(null);
+
+        // ========================================
+        // Tool Detail State
+        // ========================================
+        const toolDetail = reactive({
+            tool: null,
+            loading: false,
+            error: null
         });
 
         // Columns that can be sorted and their API field names
@@ -379,12 +395,158 @@ const app = createApp({
 
         /**
          * Handle clicking on a tool row.
-         * Prepares for tool detail view (to be implemented in Unit 4.1).
+         * Navigates to the tool detail view.
          * @param {Object} tool - The tool object that was clicked
          */
         function handleToolClick(tool) {
-            // Tool detail view will be implemented in Unit 4.1
-            console.log('Tool clicked:', tool.id, tool.name);
+            navigateToToolDetail(tool.id);
+        }
+
+        // ========================================
+        // Tool Detail Methods
+        // ========================================
+
+        /**
+         * Navigate to tool detail view.
+         * Updates URL and fetches tool data.
+         * @param {number} toolId - The ID of the tool to view
+         */
+        function navigateToToolDetail(toolId) {
+            selectedToolId.value = toolId;
+            currentView.value = 'tool-detail';
+
+            // Update URL to reflect tool detail view
+            const newUrl = `/vue/tools/${toolId}`;
+            window.history.pushState({ view: 'tool-detail', toolId }, '', newUrl);
+
+            fetchToolDetail(toolId);
+        }
+
+        /**
+         * Navigate back to dashboard.
+         * Clears tool detail state and updates URL.
+         */
+        function navigateToDashboard() {
+            currentView.value = 'dashboard';
+            selectedToolId.value = null;
+            toolDetail.tool = null;
+            toolDetail.error = null;
+
+            // Update URL to dashboard (preserve any existing filter params)
+            const queryString = buildFilterQueryString();
+            const newUrl = `/vue${queryString}`;
+            window.history.pushState({ view: 'dashboard' }, '', newUrl);
+        }
+
+        /**
+         * Fetch tool details from the API.
+         * @param {number} toolId - The ID of the tool to fetch
+         */
+        async function fetchToolDetail(toolId) {
+            toolDetail.loading = true;
+            toolDetail.error = null;
+            toolDetail.tool = null;
+
+            try {
+                const response = await fetch(`/api/tools/${toolId}`, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    toolDetail.tool = data.tool;
+                } else if (response.status === 401) {
+                    // Session expired - redirect to login
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    toolDetail.error = 'Session expired. Please log in again.';
+                } else if (response.status === 404) {
+                    toolDetail.error = 'Tool not found';
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    toolDetail.error = errorData.error || 'Failed to load tool details';
+                }
+            } catch (error) {
+                console.error('Failed to fetch tool details:', error);
+                toolDetail.error = 'Unable to connect to server. Please try again.';
+            } finally {
+                toolDetail.loading = false;
+            }
+        }
+
+        /**
+         * Handle "Update Status" button click.
+         * Opens status update form (to be implemented in Unit 4.2).
+         */
+        function handleUpdateStatusClick() {
+            // Status update form will be implemented in Unit 4.2
+            console.log('Update status clicked for tool:', selectedToolId.value);
+        }
+
+        /**
+         * Handle "View History" button click.
+         * Navigates to history view (to be implemented in Unit 4.3).
+         */
+        function handleViewHistoryClick() {
+            // History view will be implemented in Unit 4.3
+            console.log('View history clicked for tool:', selectedToolId.value);
+        }
+
+        /**
+         * Handle browser back/forward navigation.
+         * Updates view based on URL state.
+         * @param {PopStateEvent} event - The popstate event
+         */
+        function handlePopState(event) {
+            const path = window.location.pathname;
+
+            if (path.startsWith('/vue/tools/')) {
+                // Extract tool ID from path
+                const match = path.match(/\/vue\/tools\/(\d+)/);
+                if (match) {
+                    const toolId = parseInt(match[1], 10);
+                    selectedToolId.value = toolId;
+                    currentView.value = 'tool-detail';
+                    fetchToolDetail(toolId);
+                    return;
+                }
+            }
+
+            // Default to dashboard view
+            currentView.value = 'dashboard';
+            selectedToolId.value = null;
+            toolDetail.tool = null;
+            toolDetail.error = null;
+
+            // Re-read filters from URL in case they changed
+            readFiltersFromUrl();
+            if (auth.isAuthenticated) {
+                fetchTools();
+            }
+        }
+
+        /**
+         * Initialize view based on current URL.
+         * Called on app mount to handle direct navigation to tool detail.
+         */
+        function initializeViewFromUrl() {
+            const path = window.location.pathname;
+
+            if (path.startsWith('/vue/tools/')) {
+                const match = path.match(/\/vue\/tools\/(\d+)/);
+                if (match) {
+                    const toolId = parseInt(match[1], 10);
+                    selectedToolId.value = toolId;
+                    currentView.value = 'tool-detail';
+                    return toolId;
+                }
+            }
+
+            return null;
         }
 
         /**
@@ -408,15 +570,35 @@ const app = createApp({
 
         // Check authentication status when app mounts
         onMounted(() => {
+            // Initialize view from URL (check if we're on a tool detail page)
+            const initialToolId = initializeViewFromUrl();
+
             // Read filters from URL before checking auth
             readFiltersFromUrl();
-            checkAuth();
+
+            // Add popstate listener for browser navigation
+            window.addEventListener('popstate', handlePopState);
+
+            checkAuth().then(() => {
+                // If we initialized to a tool detail view, fetch the tool after auth
+                if (initialToolId && auth.isAuthenticated) {
+                    fetchToolDetail(initialToolId);
+                }
+            });
+        });
+
+        // Clean up popstate listener
+        onUnmounted(() => {
+            window.removeEventListener('popstate', handlePopState);
         });
 
         // Watch for authentication changes to fetch tools
         watch(() => auth.isAuthenticated, (isAuthenticated) => {
             if (isAuthenticated) {
-                fetchTools();
+                // Only fetch tools if on dashboard view
+                if (currentView.value === 'dashboard') {
+                    fetchTools();
+                }
             }
         });
 
@@ -444,6 +626,9 @@ const app = createApp({
             dashboard,
             filters,
             sort,
+            currentView,
+            selectedToolId,
+            toolDetail,
 
             // Computed
             isAdmin,
@@ -461,7 +646,14 @@ const app = createApp({
             handleSortClick,
             isSortable,
             isSortedBy,
-            getSortClass
+            getSortClass,
+
+            // Tool Detail Methods
+            navigateToToolDetail,
+            navigateToDashboard,
+            fetchToolDetail,
+            handleUpdateStatusClick,
+            handleViewHistoryClick
         };
     },
 
@@ -565,22 +757,128 @@ const app = createApp({
                         </div>
                     </template>
 
-                    <!-- Dashboard Content (authenticated) -->
+                    <!-- Authenticated Content -->
                     <template v-else>
-                        <div class="page-header">
-                            <h1>Equipment Status Dashboard</h1>
-                            <p v-if="dashboard.meta.total > 0">
-                                Showing {{ dashboard.meta.filtered }} of {{ dashboard.meta.total }} tools
-                            </p>
-                        </div>
+                        <!-- ========================================
+                             Tool Detail View
+                             ======================================== -->
+                        <template v-if="currentView === 'tool-detail'">
+                            <!-- Back Link -->
+                            <div class="page-header">
+                                <a href="#" class="back-link" @click.prevent="navigateToDashboard">
+                                    &larr; Back to Dashboard
+                                </a>
+                            </div>
 
-                        <!-- Error Message -->
-                        <div v-if="dashboard.error" class="alert alert-error">
-                            {{ dashboard.error }}
-                            <button class="btn btn-sm btn-secondary" style="margin-left: 10px;" @click="fetchTools">
-                                Retry
-                            </button>
-                        </div>
+                            <!-- Loading State -->
+                            <div v-if="toolDetail.loading" class="card" style="text-align: center; padding: 60px 20px;">
+                                <div class="loading-spinner-inline"></div>
+                                <p style="margin-top: 20px; color: #666;">Loading tool details...</p>
+                            </div>
+
+                            <!-- Error State -->
+                            <div v-else-if="toolDetail.error" class="card">
+                                <div class="alert alert-error">
+                                    {{ toolDetail.error }}
+                                    <button class="btn btn-sm btn-secondary" style="margin-left: 10px;" @click="fetchToolDetail(selectedToolId)">
+                                        Retry
+                                    </button>
+                                </div>
+                                <div style="text-align: center; padding: 20px;">
+                                    <button class="btn btn-secondary" @click="navigateToDashboard">
+                                        Return to Dashboard
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tool Detail Content -->
+                            <div v-else-if="toolDetail.tool" class="tool-detail">
+                                <!-- Tool Header -->
+                                <div class="card tool-detail-header">
+                                    <div class="tool-detail-title-row">
+                                        <h1 class="tool-detail-name">{{ toolDetail.tool.name }}</h1>
+                                        <span class="status-badge status-badge-lg" :class="toolDetail.tool.state_class">
+                                            {{ toolDetail.tool.state_display }}
+                                        </span>
+                                    </div>
+                                    <div class="tool-detail-subtitle">
+                                        <span class="tool-detail-area">{{ toolDetail.tool.area }}</span>
+                                        <span v-if="toolDetail.tool.bay" class="tool-detail-bay">&bull; Bay: {{ toolDetail.tool.bay }}</span>
+                                        <span v-if="toolDetail.tool.criticality" class="tool-detail-criticality">&bull; {{ toolDetail.tool.criticality }} criticality</span>
+                                    </div>
+                                </div>
+
+                                <!-- Tool Status Details -->
+                                <div class="card tool-detail-status">
+                                    <h2 class="card-section-title">Current Status</h2>
+
+                                    <div class="tool-detail-grid">
+                                        <div class="detail-item">
+                                            <span class="detail-label">Status</span>
+                                            <span class="detail-value">
+                                                <span class="status-badge" :class="toolDetail.tool.state_class">
+                                                    {{ toolDetail.tool.state_display }}
+                                                </span>
+                                            </span>
+                                        </div>
+
+                                        <div class="detail-item">
+                                            <span class="detail-label">Issue Description</span>
+                                            <span class="detail-value">{{ toolDetail.tool.issue_description || '-' }}</span>
+                                        </div>
+
+                                        <div class="detail-item">
+                                            <span class="detail-label">Comment</span>
+                                            <span class="detail-value">{{ toolDetail.tool.comment || '-' }}</span>
+                                        </div>
+
+                                        <div class="detail-item">
+                                            <span class="detail-label">ETA to UP</span>
+                                            <span class="detail-value">{{ toolDetail.tool.eta_to_up_formatted || '-' }}</span>
+                                        </div>
+
+                                        <div class="detail-item">
+                                            <span class="detail-label">Last Updated</span>
+                                            <span class="detail-value">{{ toolDetail.tool.status_updated_at_formatted || '-' }}</span>
+                                        </div>
+
+                                        <div class="detail-item">
+                                            <span class="detail-label">Updated By</span>
+                                            <span class="detail-value">{{ toolDetail.tool.status_updated_by || '-' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="tool-detail-actions">
+                                    <button class="btn btn-primary" @click="handleUpdateStatusClick">
+                                        Update Status
+                                    </button>
+                                    <button class="btn btn-secondary" @click="handleViewHistoryClick">
+                                        View History
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- ========================================
+                             Dashboard View
+                             ======================================== -->
+                        <template v-else>
+                            <div class="page-header">
+                                <h1>Equipment Status Dashboard</h1>
+                                <p v-if="dashboard.meta.total > 0">
+                                    Showing {{ dashboard.meta.filtered }} of {{ dashboard.meta.total }} tools
+                                </p>
+                            </div>
+
+                            <!-- Error Message -->
+                            <div v-if="dashboard.error" class="alert alert-error">
+                                {{ dashboard.error }}
+                                <button class="btn btn-sm btn-secondary" style="margin-left: 10px;" @click="fetchTools">
+                                    Retry
+                                </button>
+                            </div>
 
                         <!-- Filter Card -->
                         <div class="card filter-card">
@@ -748,6 +1046,7 @@ const app = createApp({
                                 </table>
                             </div>
                         </div>
+                        </template>
                     </template>
                 </div>
             </main>

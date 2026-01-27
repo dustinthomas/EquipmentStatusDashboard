@@ -420,3 +420,121 @@
     gap: 12px;
     align-items: center;
 }
+
+/* ========================================
+   Tool Detail View Styles
+   ======================================== */
+
+/* Back link */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--qci-dark-navy);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: var(--qci-light-navy);
+    text-decoration: underline;
+}
+
+/* Tool detail layout */
+.tool-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Tool header card */
+.tool-detail-header {
+    padding: 24px;
+}
+
+.tool-detail-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.tool-detail-name {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--qci-dark-navy);
+    margin: 0;
+}
+
+.tool-detail-subtitle {
+    margin-top: 8px;
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.tool-detail-area {
+    font-weight: 500;
+}
+
+.tool-detail-bay,
+.tool-detail-criticality {
+    margin-left: 8px;
+}
+
+/* Large status badge for header */
+.status-badge-lg {
+    font-size: 1rem;
+    padding: 8px 16px;
+}
+
+/* Tool status details card */
+.tool-detail-status {
+    padding: 24px;
+}
+
+.card-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--qci-dark-navy);
+    margin: 0 0 20px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Detail grid layout */
+.tool-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.detail-value {
+    font-size: 1rem;
+    color: var(--qci-body-text);
+}
+
+/* Action buttons */
+.tool-detail-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.tool-detail-actions .btn {
+    min-width: 140px;
+}

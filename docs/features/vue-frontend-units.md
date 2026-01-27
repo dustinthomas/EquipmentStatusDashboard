@@ -266,22 +266,23 @@ Implement column sorting.
 ## Milestone 4: Tool Management Views
 
 ### Unit 4.1: Tool Detail View
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/vue-tool-detail`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/25
 **Depends on:** 1.4, 2.1
 
 **Task:**
 Implement tool detail view showing full status and actions.
 
 **Acceptance Criteria:**
-- [ ] Clicking a tool row navigates to detail view
-- [ ] Shows: name, area, bay, criticality, current state, issue, comment, ETA
-- [ ] Shows last updated timestamp and user name
-- [ ] "Update Status" button opens status update form
-- [ ] "View History" button navigates to history view
-- [ ] "Back to Dashboard" link
-- [ ] Loading state while fetching
-- [ ] Error handling for 404
+- [x] Clicking a tool row navigates to detail view
+- [x] Shows: name, area, bay, criticality, current state, issue, comment, ETA
+- [x] Shows last updated timestamp and user name
+- [x] "Update Status" button opens status update form
+- [x] "View History" button navigates to history view
+- [x] "Back to Dashboard" link
+- [x] Loading state while fetching
+- [x] Error handling for 404
 
 **Files to modify:**
 - `public/js/app.js` - Add tool detail component and routing
