@@ -82,6 +82,28 @@ const app = createApp({
             error: null
         });
 
+        // ========================================
+        // Status Update Form State
+        // ========================================
+        const statusForm = reactive({
+            visible: false,
+            submitting: false,
+            error: null,
+            // Form fields
+            state: '',
+            issue_description: '',
+            comment: '',
+            eta_to_up: ''
+        });
+
+        // Valid states for the dropdown
+        const validStates = [
+            { value: 'UP', label: 'Up', class: 'status-up' },
+            { value: 'UP_WITH_ISSUES', label: 'Up with Issues', class: 'status-up-with-issues' },
+            { value: 'MAINTENANCE', label: 'Maintenance', class: 'status-maintenance' },
+            { value: 'DOWN', label: 'Down', class: 'status-down' }
+        ];
+
         // Columns that can be sorted and their API field names
         const sortableColumns = {
             name: 'name',
@@ -480,11 +502,121 @@ const app = createApp({
 
         /**
          * Handle "Update Status" button click.
-         * Opens status update form (to be implemented in Unit 4.2).
+         * Opens status update form with current tool values pre-filled.
          */
         function handleUpdateStatusClick() {
-            // Status update form will be implemented in Unit 4.2
-            console.log('Update status clicked for tool:', selectedToolId.value);
+            if (!toolDetail.tool) return;
+
+            // Pre-fill form with current tool values
+            statusForm.state = toolDetail.tool.state || '';
+            statusForm.issue_description = toolDetail.tool.issue_description || '';
+            statusForm.comment = toolDetail.tool.comment || '';
+            // Format ETA for datetime-local input if it exists
+            statusForm.eta_to_up = formatDateTimeForInput(toolDetail.tool.eta_to_up);
+
+            // Clear any previous errors and show form
+            statusForm.error = null;
+            statusForm.visible = true;
+        }
+
+        /**
+         * Format a date/time value for datetime-local input.
+         * @param {string|null} dateStr - ISO date string or null
+         * @returns {string} Formatted date string for input or empty string
+         */
+        function formatDateTimeForInput(dateStr) {
+            if (!dateStr) return '';
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return '';
+                // Format as YYYY-MM-DDTHH:MM for datetime-local input
+                return date.toISOString().slice(0, 16);
+            } catch {
+                return '';
+            }
+        }
+
+        /**
+         * Close the status update form without saving.
+         */
+        function closeStatusForm() {
+            statusForm.visible = false;
+            statusForm.error = null;
+        }
+
+        /**
+         * Submit the status update form.
+         * Calls POST /api/tools/:id/status with form data.
+         */
+        async function submitStatusForm() {
+            // Validate required field
+            if (!statusForm.state) {
+                statusForm.error = 'Status is required';
+                return;
+            }
+
+            statusForm.submitting = true;
+            statusForm.error = null;
+
+            try {
+                // Build request payload
+                const payload = {
+                    state: statusForm.state
+                };
+
+                // Only include optional fields if they have values
+                if (statusForm.issue_description.trim()) {
+                    payload.issue_description = statusForm.issue_description.trim();
+                }
+                if (statusForm.comment.trim()) {
+                    payload.comment = statusForm.comment.trim();
+                }
+                // Only include ETA if state is not UP and field has value
+                if (statusForm.state !== 'UP' && statusForm.eta_to_up) {
+                    payload.eta_to_up = statusForm.eta_to_up;
+                }
+
+                const response = await fetch(`/api/tools/${selectedToolId.value}/status`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Update tool detail with new data
+                    toolDetail.tool = data.tool;
+                    // Close the form
+                    statusForm.visible = false;
+                } else if (response.status === 401) {
+                    // Session expired
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    statusForm.error = 'Session expired. Please log in again.';
+                } else {
+                    // Show validation error from API
+                    statusForm.error = data.error || 'Failed to update status';
+                }
+            } catch (error) {
+                console.error('Failed to submit status update:', error);
+                statusForm.error = 'Unable to connect to server. Please try again.';
+            } finally {
+                statusForm.submitting = false;
+            }
+        }
+
+        /**
+         * Check if ETA field should be shown.
+         * Hidden when state is UP since ETA is cleared automatically.
+         * @returns {boolean} True if ETA field should be visible
+         */
+        function shouldShowEtaField() {
+            return statusForm.state !== 'UP';
         }
 
         /**
@@ -629,6 +761,8 @@ const app = createApp({
             currentView,
             selectedToolId,
             toolDetail,
+            statusForm,
+            validStates,
 
             // Computed
             isAdmin,
@@ -653,7 +787,12 @@ const app = createApp({
             navigateToDashboard,
             fetchToolDetail,
             handleUpdateStatusClick,
-            handleViewHistoryClick
+            handleViewHistoryClick,
+
+            // Status Update Methods
+            closeStatusForm,
+            submitStatusForm,
+            shouldShowEtaField
         };
     },
 
@@ -1050,6 +1189,114 @@ const app = createApp({
                     </template>
                 </div>
             </main>
+
+            <!-- Status Update Modal -->
+            <div v-if="statusForm.visible" class="modal-overlay" @click.self="closeStatusForm">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Update Status</h2>
+                        <button class="modal-close" @click="closeStatusForm" :disabled="statusForm.submitting">&times;</button>
+                    </div>
+
+                    <form @submit.prevent="submitStatusForm" class="modal-body">
+                        <!-- Error Message -->
+                        <div v-if="statusForm.error" class="alert alert-error">
+                            {{ statusForm.error }}
+                        </div>
+
+                        <!-- State Dropdown (Required) -->
+                        <div class="form-group">
+                            <label for="status-state" class="form-label">Status <span class="required">*</span></label>
+                            <select
+                                id="status-state"
+                                v-model="statusForm.state"
+                                class="form-control"
+                                :disabled="statusForm.submitting"
+                                required
+                            >
+                                <option value="" disabled>Select a status...</option>
+                                <option
+                                    v-for="state in validStates"
+                                    :key="state.value"
+                                    :value="state.value"
+                                    :class="state.class"
+                                >
+                                    {{ state.label }}
+                                </option>
+                            </select>
+                            <div v-if="statusForm.state" class="status-preview">
+                                <span class="status-badge" :class="'status-' + statusForm.state.toLowerCase().replace('_', '-')">
+                                    {{ validStates.find(s => s.value === statusForm.state)?.label || statusForm.state }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Issue Description (Optional) -->
+                        <div class="form-group">
+                            <label for="status-issue" class="form-label">Issue Description</label>
+                            <textarea
+                                id="status-issue"
+                                v-model="statusForm.issue_description"
+                                class="form-control"
+                                rows="2"
+                                placeholder="Describe the issue (if any)..."
+                                :disabled="statusForm.submitting"
+                            ></textarea>
+                        </div>
+
+                        <!-- Comment (Optional) -->
+                        <div class="form-group">
+                            <label for="status-comment" class="form-label">Comment</label>
+                            <textarea
+                                id="status-comment"
+                                v-model="statusForm.comment"
+                                class="form-control"
+                                rows="2"
+                                placeholder="Additional notes..."
+                                :disabled="statusForm.submitting"
+                            ></textarea>
+                        </div>
+
+                        <!-- ETA to UP (Optional, hidden when UP) -->
+                        <div v-if="shouldShowEtaField()" class="form-group">
+                            <label for="status-eta" class="form-label">ETA to UP</label>
+                            <input
+                                type="datetime-local"
+                                id="status-eta"
+                                v-model="statusForm.eta_to_up"
+                                class="form-control"
+                                :disabled="statusForm.submitting"
+                            />
+                            <small class="form-help">When do you expect the tool to be back up?</small>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="modal-actions">
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                @click="closeStatusForm"
+                                :disabled="statusForm.submitting"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                :disabled="statusForm.submitting || !statusForm.state"
+                            >
+                                <template v-if="statusForm.submitting">
+                                    <span class="loading-spinner-inline loading-spinner-sm"></span>
+                                    Saving...
+                                </template>
+                                <template v-else>
+                                    Save Status
+                                </template>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
             <!-- Footer -->
             <footer class="footer">
