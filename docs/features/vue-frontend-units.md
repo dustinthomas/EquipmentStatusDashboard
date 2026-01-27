@@ -290,8 +290,9 @@ Implement tool detail view showing full status and actions.
 ---
 
 ### Unit 4.2: Status Update Form
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/vue-status-update`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/26
 **Depends on:** 1.5, 4.1
 
 **Task:**
