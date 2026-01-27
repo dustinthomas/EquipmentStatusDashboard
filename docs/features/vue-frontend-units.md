@@ -266,8 +266,9 @@ Implement column sorting.
 ## Milestone 4: Tool Management Views
 
 ### Unit 4.1: Tool Detail View
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/vue-tool-detail`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/25
 **Depends on:** 1.4, 2.1
 
 **Task:**
