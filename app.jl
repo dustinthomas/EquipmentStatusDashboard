@@ -1,61 +1,19 @@
 # QCI Equipment Status Dashboard
-# Application entry point
+# Legacy entry point - redirects to new App module structure
+#
+# RECOMMENDED: Use Genie.loadapp() instead:
+#   using Genie
+#   Genie.loadapp()
+#   App.load_app()
+#   up()
+#
+# This file provides backwards compatibility for direct include("app.jl")
 
-using Genie
-using Logging
+@warn "app.jl is deprecated. Use Genie.loadapp() instead for proper hot-reloading support."
 
-# Configure logging based on environment
-const LOG_LEVEL = get(ENV, "LOG_LEVEL", "info")
-const log_level_map = Dict(
-    "debug" => Logging.Debug,
-    "info" => Logging.Info,
-    "warn" => Logging.Warn,
-    "error" => Logging.Error
-)
-global_logger(ConsoleLogger(stderr, get(log_level_map, lowercase(LOG_LEVEL), Logging.Info)))
+# Load the new App module
+include("bootstrap.jl")
 
-# Environment configuration
-const PORT = parse(Int, get(ENV, "PORT", "8000"))
-const DATABASE_PATH = get(ENV, "DATABASE_PATH", "db/qci_status.sqlite")
-const GENIE_ENV = get(ENV, "GENIE_ENV", "dev")
-
-@info "Starting QCI Equipment Status Dashboard"
-@info "Environment: $GENIE_ENV"
-@info "Port: $PORT"
-@info "Database: $DATABASE_PATH"
-
-# Set Genie environment
-ENV["GENIE_ENV"] = GENIE_ENV
-
-# Load environment-specific configuration
-const env_file = joinpath(@__DIR__, "config", "env", "$GENIE_ENV.jl")
-if isfile(env_file)
-    @info "Loading environment config: $env_file"
-    include(env_file)
-else
-    @warn "Environment config not found: $env_file, using defaults"
-end
-
-# Load initializers
-const initializers_dir = joinpath(@__DIR__, "config", "initializers")
-if isdir(initializers_dir)
-    for init_file in readdir(initializers_dir; join=true)
-        if endswith(init_file, ".jl")
-            @info "Loading initializer: $init_file"
-            include(init_file)
-        end
-    end
-end
-
-# Load routes
-const routes_file = joinpath(@__DIR__, "config", "routes.jl")
-if isfile(routes_file)
-    @info "Loading routes: $routes_file"
-    include(routes_file)
-else
-    @error "Routes file not found: $routes_file"
-end
-
-# Start server
-@info "Starting server on port $PORT"
-up(PORT; async = false)
+# Load routes and start server
+App.load_app()
+App.up(; async = false)

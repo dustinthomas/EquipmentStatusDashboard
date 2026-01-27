@@ -11,13 +11,12 @@ using Genie.Requests: postpayload, jsonpayload
 using GenieSession
 using Logging
 
-# Import authentication functions from the initializer
-# These are loaded when the app starts
-using Main: authenticate_user, login!, logout!, current_user, is_authenticated
+# Import authentication functions from parent App module
+import ..App: authenticate_user, login!, logout!, current_user, is_authenticated
 
-# Import auth helpers for redirect URL handling
-# AuthHelpers is loaded by routes.jl before this controller
-using Main.AuthHelpers: get_redirect_url
+# Import auth helpers (also part of App module)
+import ..App: AuthHelpers
+using ..App.AuthHelpers: get_redirect_url
 
 # Import API helpers for consistent error responses
 include(joinpath(@__DIR__, "..", "lib", "api_helpers.jl"))

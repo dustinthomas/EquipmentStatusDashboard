@@ -18,8 +18,9 @@ using .ApiHelpers: api_unauthorized, api_forbidden
 const REDIRECT_URL_KEY = :__redirect_url
 const LAST_ACTIVITY_KEY = :__last_activity
 
-# Re-export authentication functions from Main (loaded via initializers)
-# These are set up after the module is loaded
+# Import parent App module for authentication functions
+# Use qualified calls (App.xxx) to avoid naming conflicts with wrapper functions
+import ..App
 
 """
     get_session() -> GenieSession.Session
@@ -129,13 +130,13 @@ function require_authentication()
     if !check_session_timeout(session, timeout_seconds)
         @info "Session expired, clearing authentication"
         # Clear auth data on timeout
-        Main.logout!(session)
+        App.logout!(session)
         store_redirect_url(get_current_path())
         return redirect("/login")
     end
 
     # Check if authenticated
-    if !Main.is_authenticated(session)
+    if !App.is_authenticated(session)
         @debug "Unauthenticated access attempt" path=get_current_path()
         store_redirect_url(get_current_path())
         return redirect("/login")
@@ -170,12 +171,12 @@ function require_authentication_api()
     timeout_seconds = get(ENV, "SESSION_TIMEOUT", "28800") |> x -> parse(Int, x)
     if !check_session_timeout(session, timeout_seconds)
         @info "Session expired, clearing authentication"
-        Main.logout!(session)
+        App.logout!(session)
         return api_unauthorized("Session expired")
     end
 
     # Check if authenticated
-    if !Main.is_authenticated(session)
+    if !App.is_authenticated(session)
         @debug "Unauthenticated API access attempt" path=get_current_path()
         return api_unauthorized()
     end
@@ -211,7 +212,7 @@ function require_admin()
 
     # Then check admin role
     session = get_session()
-    if !Main.is_admin(session)
+    if !App.is_admin(session)
         @warn "Non-admin access attempt to admin route" path=get_current_path()
         # Return 403 Forbidden - will be handled by error page in Unit 5.1
         return Genie.Renderer.respond(
@@ -231,7 +232,7 @@ Convenience wrapper that doesn't require passing the session.
 """
 function current_user()
     session = get_session()
-    return Main.current_user(session)
+    return App.current_user(session)
 end
 
 """
@@ -242,7 +243,7 @@ Convenience wrapper that doesn't require passing the session.
 """
 function is_authenticated()::Bool
     session = get_session()
-    return Main.is_authenticated(session)
+    return App.is_authenticated(session)
 end
 
 """
@@ -253,7 +254,7 @@ Convenience wrapper that doesn't require passing the session.
 """
 function is_admin()::Bool
     session = get_session()
-    return Main.is_admin(session)
+    return App.is_admin(session)
 end
 
 export get_session, store_redirect_url, get_redirect_url, get_current_path
