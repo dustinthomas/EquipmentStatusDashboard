@@ -313,7 +313,7 @@ Implement status update form as modal or inline component.
 ---
 
 ### Unit 4.3: Tool History View
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/vue-history`
 **Depends on:** 1.6, 4.1
 
@@ -321,16 +321,17 @@ Implement status update form as modal or inline component.
 Implement tool history view with filtering and export.
 
 **Acceptance Criteria:**
-- [ ] Lists all status events for the tool
-- [ ] Shows: timestamp, user, state, issue, comment, ETA
-- [ ] Ordered newest first
-- [ ] Date range filter (from/to date pickers)
-- [ ] "Export CSV" button triggers download
-- [ ] "Back to Tool" link
-- [ ] Loading state while fetching
+- [x] Lists all status events for the tool
+- [x] Shows: timestamp, user, state, issue, comment, ETA
+- [x] Ordered newest first
+- [x] Date range filter (from/to date pickers)
+- [x] "Export CSV" button triggers download
+- [x] "Back to Tool" link
+- [x] Loading state while fetching
 
 **Files to modify:**
 - `public/js/app.js` - Add history component
+- `public/css/qci.css` - Add history view styles
 
 ---
 

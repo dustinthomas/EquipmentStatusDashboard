@@ -69,7 +69,7 @@ const app = createApp({
         // ========================================
         // View/Navigation State
         // ========================================
-        // currentView: 'dashboard' | 'tool-detail'
+        // currentView: 'dashboard' | 'tool-detail' | 'tool-history'
         const currentView = ref('dashboard');
         const selectedToolId = ref(null);
 
@@ -94,6 +94,19 @@ const app = createApp({
             issue_description: '',
             comment: '',
             eta_to_up: ''
+        });
+
+        // ========================================
+        // Tool History State
+        // ========================================
+        const toolHistory = reactive({
+            events: [],
+            toolName: '',
+            loading: false,
+            error: null,
+            // Date filter fields
+            fromDate: '',
+            toDate: ''
         });
 
         // Valid states for the dropdown
@@ -621,12 +634,158 @@ const app = createApp({
 
         /**
          * Handle "View History" button click.
-         * Navigates to history view (to be implemented in Unit 4.3).
+         * Navigates to history view for the current tool.
          */
         function handleViewHistoryClick() {
-            // History view will be implemented in Unit 4.3
-            console.log('View history clicked for tool:', selectedToolId.value);
+            if (selectedToolId.value) {
+                navigateToHistory(selectedToolId.value);
+            }
         }
+
+        // ========================================
+        // Tool History Methods
+        // ========================================
+
+        /**
+         * Navigate to tool history view.
+         * Updates URL and fetches history data.
+         * @param {number} toolId - The ID of the tool to view history for
+         */
+        function navigateToHistory(toolId) {
+            selectedToolId.value = toolId;
+            currentView.value = 'tool-history';
+
+            // Clear any previous filters
+            toolHistory.fromDate = '';
+            toolHistory.toDate = '';
+
+            // Update URL to reflect history view
+            const newUrl = `/vue/tools/${toolId}/history`;
+            window.history.pushState({ view: 'tool-history', toolId }, '', newUrl);
+
+            fetchToolHistory(toolId);
+        }
+
+        /**
+         * Navigate back to tool detail from history.
+         */
+        function navigateBackToTool() {
+            if (selectedToolId.value) {
+                currentView.value = 'tool-detail';
+
+                // Update URL to tool detail
+                const newUrl = `/vue/tools/${selectedToolId.value}`;
+                window.history.pushState({ view: 'tool-detail', toolId: selectedToolId.value }, '', newUrl);
+
+                // Re-fetch tool detail if needed
+                if (!toolDetail.tool) {
+                    fetchToolDetail(selectedToolId.value);
+                }
+            } else {
+                navigateToDashboard();
+            }
+        }
+
+        /**
+         * Fetch tool history from the API.
+         * @param {number} toolId - The ID of the tool to fetch history for
+         */
+        async function fetchToolHistory(toolId) {
+            toolHistory.loading = true;
+            toolHistory.error = null;
+            toolHistory.events = [];
+
+            try {
+                // Build query string for date filters
+                const params = new URLSearchParams();
+                if (toolHistory.fromDate) {
+                    params.set('from', toolHistory.fromDate);
+                }
+                if (toolHistory.toDate) {
+                    params.set('to', toolHistory.toDate);
+                }
+                const queryString = params.toString();
+                const url = `/api/tools/${toolId}/history${queryString ? '?' + queryString : ''}`;
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    toolHistory.events = data.events || [];
+                    toolHistory.toolName = data.tool_name || '';
+                } else if (response.status === 401) {
+                    // Session expired - redirect to login
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    toolHistory.error = 'Session expired. Please log in again.';
+                } else if (response.status === 404) {
+                    toolHistory.error = 'Tool not found';
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    toolHistory.error = errorData.error || 'Failed to load history';
+                }
+            } catch (error) {
+                console.error('Failed to fetch tool history:', error);
+                toolHistory.error = 'Unable to connect to server. Please try again.';
+            } finally {
+                toolHistory.loading = false;
+            }
+        }
+
+        /**
+         * Apply date filters and re-fetch history.
+         */
+        function applyHistoryFilters() {
+            if (selectedToolId.value) {
+                fetchToolHistory(selectedToolId.value);
+            }
+        }
+
+        /**
+         * Clear date filters and re-fetch history.
+         */
+        function clearHistoryFilters() {
+            toolHistory.fromDate = '';
+            toolHistory.toDate = '';
+            if (selectedToolId.value) {
+                fetchToolHistory(selectedToolId.value);
+            }
+        }
+
+        /**
+         * Trigger CSV download for tool history.
+         */
+        function exportHistoryCsv() {
+            if (!selectedToolId.value) return;
+
+            // Build query string for date filters
+            const params = new URLSearchParams();
+            if (toolHistory.fromDate) {
+                params.set('from', toolHistory.fromDate);
+            }
+            if (toolHistory.toDate) {
+                params.set('to', toolHistory.toDate);
+            }
+            const queryString = params.toString();
+            const url = `/api/tools/${selectedToolId.value}/history.csv${queryString ? '?' + queryString : ''}`;
+
+            // Trigger download by opening URL in new window/tab
+            window.open(url, '_blank');
+        }
+
+        /**
+         * Check if history date filters are active.
+         * @returns {boolean} True if any date filter is set
+         */
+        const hasActiveHistoryFilters = computed(() => {
+            return toolHistory.fromDate !== '' || toolHistory.toDate !== '';
+        });
 
         /**
          * Handle browser back/forward navigation.
@@ -636,9 +795,21 @@ const app = createApp({
         function handlePopState(event) {
             const path = window.location.pathname;
 
+            // Check for history view first (more specific path)
+            if (path.match(/\/vue\/tools\/\d+\/history/)) {
+                const match = path.match(/\/vue\/tools\/(\d+)\/history/);
+                if (match) {
+                    const toolId = parseInt(match[1], 10);
+                    selectedToolId.value = toolId;
+                    currentView.value = 'tool-history';
+                    fetchToolHistory(toolId);
+                    return;
+                }
+            }
+
+            // Check for tool detail view
             if (path.startsWith('/vue/tools/')) {
-                // Extract tool ID from path
-                const match = path.match(/\/vue\/tools\/(\d+)/);
+                const match = path.match(/\/vue\/tools\/(\d+)$/);
                 if (match) {
                     const toolId = parseInt(match[1], 10);
                     selectedToolId.value = toolId;
@@ -653,6 +824,8 @@ const app = createApp({
             selectedToolId.value = null;
             toolDetail.tool = null;
             toolDetail.error = null;
+            toolHistory.events = [];
+            toolHistory.error = null;
 
             // Re-read filters from URL in case they changed
             readFiltersFromUrl();
@@ -663,18 +836,31 @@ const app = createApp({
 
         /**
          * Initialize view based on current URL.
-         * Called on app mount to handle direct navigation to tool detail.
+         * Called on app mount to handle direct navigation to tool detail or history.
+         * @returns {Object|null} Object with toolId and view type, or null for dashboard
          */
         function initializeViewFromUrl() {
             const path = window.location.pathname;
 
+            // Check for history view first (more specific path)
+            if (path.match(/\/vue\/tools\/\d+\/history/)) {
+                const match = path.match(/\/vue\/tools\/(\d+)\/history/);
+                if (match) {
+                    const toolId = parseInt(match[1], 10);
+                    selectedToolId.value = toolId;
+                    currentView.value = 'tool-history';
+                    return { toolId, view: 'tool-history' };
+                }
+            }
+
+            // Check for tool detail view
             if (path.startsWith('/vue/tools/')) {
-                const match = path.match(/\/vue\/tools\/(\d+)/);
+                const match = path.match(/\/vue\/tools\/(\d+)$/);
                 if (match) {
                     const toolId = parseInt(match[1], 10);
                     selectedToolId.value = toolId;
                     currentView.value = 'tool-detail';
-                    return toolId;
+                    return { toolId, view: 'tool-detail' };
                 }
             }
 
@@ -702,8 +888,8 @@ const app = createApp({
 
         // Check authentication status when app mounts
         onMounted(() => {
-            // Initialize view from URL (check if we're on a tool detail page)
-            const initialToolId = initializeViewFromUrl();
+            // Initialize view from URL (check if we're on a tool detail or history page)
+            const initialView = initializeViewFromUrl();
 
             // Read filters from URL before checking auth
             readFiltersFromUrl();
@@ -712,9 +898,13 @@ const app = createApp({
             window.addEventListener('popstate', handlePopState);
 
             checkAuth().then(() => {
-                // If we initialized to a tool detail view, fetch the tool after auth
-                if (initialToolId && auth.isAuthenticated) {
-                    fetchToolDetail(initialToolId);
+                // If we initialized to a specific view, fetch the data after auth
+                if (initialView && auth.isAuthenticated) {
+                    if (initialView.view === 'tool-history') {
+                        fetchToolHistory(initialView.toolId);
+                    } else if (initialView.view === 'tool-detail') {
+                        fetchToolDetail(initialView.toolId);
+                    }
                 }
             });
         });
@@ -763,11 +953,13 @@ const app = createApp({
             toolDetail,
             statusForm,
             validStates,
+            toolHistory,
 
             // Computed
             isAdmin,
             userName,
             hasActiveFilters,
+            hasActiveHistoryFilters,
 
             // Methods
             handleLogin,
@@ -792,7 +984,15 @@ const app = createApp({
             // Status Update Methods
             closeStatusForm,
             submitStatusForm,
-            shouldShowEtaField
+            shouldShowEtaField,
+
+            // History Methods
+            navigateToHistory,
+            navigateBackToTool,
+            fetchToolHistory,
+            applyHistoryFilters,
+            clearHistoryFilters,
+            exportHistoryCsv
         };
     },
 
@@ -996,6 +1196,151 @@ const app = createApp({
                                     <button class="btn btn-secondary" @click="handleViewHistoryClick">
                                         View History
                                     </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- ========================================
+                             Tool History View
+                             ======================================== -->
+                        <template v-else-if="currentView === 'tool-history'">
+                            <!-- Back Link -->
+                            <div class="page-header">
+                                <a href="#" class="back-link" @click.prevent="navigateBackToTool">
+                                    &larr; Back to Tool
+                                </a>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div v-if="toolHistory.loading" class="card" style="text-align: center; padding: 60px 20px;">
+                                <div class="loading-spinner-inline"></div>
+                                <p style="margin-top: 20px; color: #666;">Loading history...</p>
+                            </div>
+
+                            <!-- Error State -->
+                            <div v-else-if="toolHistory.error" class="card">
+                                <div class="alert alert-error">
+                                    {{ toolHistory.error }}
+                                    <button class="btn btn-sm btn-secondary" style="margin-left: 10px;" @click="fetchToolHistory(selectedToolId)">
+                                        Retry
+                                    </button>
+                                </div>
+                                <div style="text-align: center; padding: 20px;">
+                                    <button class="btn btn-secondary" @click="navigateBackToTool">
+                                        Return to Tool
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- History Content -->
+                            <div v-else class="tool-history">
+                                <!-- History Header -->
+                                <div class="card tool-history-header">
+                                    <h1 class="tool-history-title">Status History</h1>
+                                    <p class="tool-history-subtitle">{{ toolHistory.toolName }}</p>
+                                </div>
+
+                                <!-- Date Filter Card -->
+                                <div class="card filter-card">
+                                    <form class="filter-form" @submit.prevent="applyHistoryFilters">
+                                        <div class="filter-row">
+                                            <div class="filter-group">
+                                                <label class="filter-label" for="history-from">From Date</label>
+                                                <input
+                                                    type="date"
+                                                    id="history-from"
+                                                    v-model="toolHistory.fromDate"
+                                                    class="form-control filter-input"
+                                                />
+                                            </div>
+                                            <div class="filter-group">
+                                                <label class="filter-label" for="history-to">To Date</label>
+                                                <input
+                                                    type="date"
+                                                    id="history-to"
+                                                    v-model="toolHistory.toDate"
+                                                    class="form-control filter-input"
+                                                />
+                                            </div>
+                                            <div class="filter-group filter-group-buttons">
+                                                <button type="submit" class="btn btn-primary">
+                                                    Apply
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-secondary"
+                                                    @click="clearHistoryFilters"
+                                                    :disabled="!hasActiveHistoryFilters"
+                                                >
+                                                    Clear
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-outline"
+                                                    @click="exportHistoryCsv"
+                                                    title="Export to CSV"
+                                                >
+                                                    Export CSV
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- History Table -->
+                                <div class="card history-card">
+                                    <!-- Empty State -->
+                                    <div v-if="toolHistory.events.length === 0" style="text-align: center; padding: 60px 20px;">
+                                        <p style="color: #666; font-size: 1.1rem;">No history records found</p>
+                                        <p v-if="hasActiveHistoryFilters" style="color: #999; font-size: 0.9rem; margin-top: 10px;">
+                                            No records match the selected date range.
+                                            <button class="btn btn-sm btn-secondary" style="margin-left: 8px;" @click="clearHistoryFilters">
+                                                Clear Filters
+                                            </button>
+                                        </p>
+                                        <p v-else style="color: #999; font-size: 0.9rem; margin-top: 10px;">
+                                            This tool has no status change history.
+                                        </p>
+                                    </div>
+
+                                    <!-- History Table -->
+                                    <div v-else class="table-container">
+                                        <table class="table history-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Timestamp</th>
+                                                    <th>User</th>
+                                                    <th>Status</th>
+                                                    <th>Issue</th>
+                                                    <th>Comment</th>
+                                                    <th>ETA</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="event in toolHistory.events" :key="event.id">
+                                                    <td class="history-timestamp">{{ event.created_at_formatted }}</td>
+                                                    <td>{{ event.created_by_user_name || '-' }}</td>
+                                                    <td>
+                                                        <span class="status-badge" :class="event.state_class">
+                                                            {{ event.state_display }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="history-issue" :title="event.issue_description">
+                                                        {{ event.issue_description || '-' }}
+                                                    </td>
+                                                    <td class="history-comment" :title="event.comment">
+                                                        {{ event.comment || '-' }}
+                                                    </td>
+                                                    <td>{{ event.eta_to_up_formatted || '-' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Record Count -->
+                                    <div v-if="toolHistory.events.length > 0" class="history-footer">
+                                        <span class="history-count">{{ toolHistory.events.length }} record(s)</span>
+                                    </div>
                                 </div>
                             </div>
                         </template>
