@@ -220,20 +220,21 @@ Implement the main tools table with data fetching.
 ---
 
 ### Unit 3.2: Filtering
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/vue-dashboard-filter`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/23
 **Depends on:** 3.1
 
 **Task:**
 Implement filter controls (state, area, search).
 
 **Acceptance Criteria:**
-- [ ] State dropdown with all states
-- [ ] Area dropdown populated from tools data
-- [ ] Search input for name filtering
-- [ ] Apply button triggers API call with filters
-- [ ] Clear button resets all filters
-- [ ] Filters reflected in URL query string
+- [x] State dropdown with all states
+- [x] Area dropdown populated from tools data
+- [x] Search input for name filtering
+- [x] Apply button triggers API call with filters
+- [x] Clear button resets all filters
+- [x] Filters reflected in URL query string
 
 **Files to modify:**
 - `public/js/app.js` - Add filter state and handlers
