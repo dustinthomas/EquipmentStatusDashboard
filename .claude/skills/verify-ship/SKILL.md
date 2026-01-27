@@ -39,8 +39,11 @@ git checkout [branch-name-from-unit]
 ### Step 4: Run Verification Checks
 
 #### 4a. Run All Tests
-```bash
-julia --project=. -e "using Pkg; Pkg.test()"
+
+Use the Julia REPL MCP (not bash):
+```julia
+# In MCP REPL:
+using Pkg; Pkg.test()
 ```
 
 #### 4b. Review Acceptance Criteria
@@ -134,3 +137,4 @@ CLEAR CONTEXT, then run `/implement-step docs/features/FEATURE-units.md [unit-nu
 - Document failures clearly so implementer can fix
 - Only create PR if verification passes
 - Update milestone status when all units complete
+- **Use Julia REPL MCP** - NEVER use `julia` in bash (see CLAUDE.md "Julia REPL" section)

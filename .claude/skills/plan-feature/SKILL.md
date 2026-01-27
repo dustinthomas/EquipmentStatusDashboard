@@ -120,3 +120,4 @@ After creating both files, tell the user:
 - Units within a milestone can have dependencies
 - Cross-milestone dependencies should be avoided
 - Follow the project's coding style from CLAUDE.md
+- **Use Julia REPL MCP** - When exploring code, use REPL not bash (see CLAUDE.md "Julia REPL" section)

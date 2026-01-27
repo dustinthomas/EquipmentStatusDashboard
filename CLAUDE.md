@@ -44,42 +44,88 @@ This is the rulebook for Claude Code sessions working in this repository.
 
 ## Development Commands
 
+**IMPORTANT:** Use the Julia REPL MCP server for all Julia operations. See "Julia REPL" section below.
+
 ```bash
-# Setup (install Julia dependencies)
-julia --project=. -e "using Pkg; Pkg.instantiate()"
-
-# Run development server
-julia --project=. -e "include(\"app.jl\")"
-
-# Run database migrations
-julia --project=. -e "using SearchLight; SearchLight.Migration.up()"
-
-# Run tests
-julia --project=. -e "using Pkg; Pkg.test()"
-
-# Build Docker image
+# Docker build/run (these use bash, not Julia)
 docker build -t qci-status:latest .
-
-# Run Docker container
 docker run -d -p 8000:8000 -v qci-data:/data qci-status:latest
+
+# Restart MCP REPL (when struct changes require Julia restart)
+bash scripts/restart_mcp.sh
 ```
 
-## Julia REPL
+## Julia REPL (CRITICAL)
 
-A Julia REPL is available via the `julia-repl` MCP server. **Always use this instead of `julia` in bash.**
+A Julia REPL MCP server is available. **ALWAYS use this instead of `julia` in bash.**
 
-**Use the REPL for:**
-- Running code in the project environment (already configured with `--project=.`)
-- Database migrations (`using SearchLight; SearchLight.Migration.up()`)
-- Running tests (`using Pkg; Pkg.test()`)
-- Experimenting with small code snippets
+### Why Use the MCP REPL?
 
-**Rules:**
-- Before assuming anything about the environment, check first: `Pkg.status()`, `versioninfo()`, or use `investigate_environment` tool
-- Don't invent APIs—use `@doc function_name` or read existing code in `src/`, `config/`, `db/`
-- Use `let` blocks for temporary computations to avoid polluting the shared namespace
-- Don't modify the environment (`Pkg.add`, `Pkg.activate`)—ask the user if dependencies are missing
-- Revise.jl is active: edits to `src/` files are picked up automatically (except struct/const changes)
+1. **No startup latency** - Julia startup takes seconds; the REPL is already running
+2. **Project environment ready** - Already configured with `--project=.`
+3. **Revise.jl active** - Function changes auto-reload without restart
+4. **Persistent state** - Database connections, loaded modules persist
+
+### MCP REPL Tools
+
+| Tool | Purpose |
+|------|---------|
+| `mcp__julia-repl__exec_repl` | Execute Julia code |
+| `mcp__julia-repl__investigate_environment` | Check project/package status |
+| `mcp__julia-repl__remove-trailing-whitespace` | Clean up edited files |
+| `mcp__julia-repl__usage_instructions` | Get detailed REPL guidance |
+
+### Common Operations
+
+**Starting the App:**
+```julia
+# In MCP REPL (not bash!):
+using Genie; Genie.loadapp()
+App.load_app()
+App.up(8000; async=true)
+```
+
+**Stopping/Restarting Server:**
+```julia
+App.down()           # Stop server
+App.up(8000)         # Restart without reloading
+```
+
+**Running Tests:**
+```julia
+using Pkg; Pkg.test()
+```
+
+**Database Migrations:**
+```julia
+using SearchLight; SearchLight.Migration.up()
+```
+
+**Checking Documentation:**
+```julia
+@doc function_name
+```
+
+### Rules
+
+1. **NEVER** use `julia` commands in bash - always use the MCP REPL
+2. **Check before assuming** - Use `@doc`, `Pkg.status()`, or read existing code
+3. **Use `let` blocks** for temporary computations to avoid namespace pollution
+4. **Don't modify environment** - Ask the user if dependencies are missing
+5. **Revise.jl limitations** - Struct/const changes require REPL restart
+
+### When to Restart the MCP REPL
+
+Restart is needed when you modify:
+- Struct definitions (in model files)
+- Const values
+- Module structure
+
+To restart:
+```bash
+bash scripts/restart_mcp.sh
+```
+Wait ~20 seconds, then reload the app in the new REPL.
 
 ## Document Hierarchy
 
@@ -148,13 +194,22 @@ EquipmentStatusDashboard/
 ├── Project.toml           # Julia dependencies
 ├── Manifest.toml          # Julia dependency lock
 ├── Dockerfile             # Docker deployment
-├── app.jl                 # Application entry point
+├── bootstrap.jl           # Entry point for Genie.loadapp()
+├── app.jl                 # Legacy entry point (deprecated, use bootstrap.jl)
+│
+├── bin/                   # Startup scripts
+│   ├── repl.bat           # Start interactive REPL (Windows)
+│   └── server.bat         # Start server (Windows)
+│
+├── scripts/               # Development scripts
+│   └── restart_mcp.sh     # Restart MCP REPL in WezTerm
 │
 ├── src/                   # Source code
+│   ├── App.jl             # Main application module
 │   ├── models/            # SearchLight models (User, Tool, StatusEvent)
 │   ├── controllers/       # Route handlers
 │   ├── views/             # HTML templates
-│   └── lib/               # Shared utilities
+│   └── lib/               # Shared utilities (AuthCore, auth_helpers)
 │
 ├── db/
 │   ├── migrations/        # Database migrations

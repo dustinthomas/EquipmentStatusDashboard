@@ -53,8 +53,10 @@ Follow the unit's task description and acceptance criteria:
 
 ### Step 6: Run Tests
 
-```bash
-julia --project=. -e "using Pkg; Pkg.test()"
+Use the Julia REPL MCP (not bash):
+```julia
+# In MCP REPL:
+using Pkg; Pkg.test()
 ```
 
 All tests must pass before proceeding.
@@ -103,3 +105,4 @@ Tell the user:
 - Run tests before marking as IMPLEMENTED
 - Update both the units file AND the code
 - Keep changes focused on the unit's scope only
+- **Use Julia REPL MCP** - NEVER use `julia` in bash (see CLAUDE.md "Julia REPL" section)
