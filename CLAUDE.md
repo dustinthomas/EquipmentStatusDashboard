@@ -81,9 +81,12 @@ A Julia REPL MCP server is available. **ALWAYS use this instead of `julia` in ba
 ```julia
 # In MCP REPL (not bash!):
 using Genie; Genie.loadapp()
-App.load_app()
-App.up(8000; async=true)
+App.up(8000; async=true)  # Auto-calls load_app() if needed
 ```
+
+> Note: `App.up()` automatically calls `App.load_app()` if it hasn't been called yet.
+> You can still call `App.load_app()` explicitly if you need to initialize
+> the database/routes without starting the server.
 
 **Stopping/Restarting Server:**
 ```julia
@@ -308,7 +311,10 @@ font-family: "Raleway", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-seri
 
 ## Lessons Learned
 
-(Start empty - add entries as discovered)
+### 2026-01-27 - App startup requires load_app() before routes work
+**What happened:** Server started with `Genie.loadapp()` + `App.up()` but all routes returned 404. The routes array was empty because `App.load_app()` wasn't called. This function initializes the database connection and loads routes from `config/routes.jl`.
+**Fix:** Modified `App.up()` to automatically call `load_app()` if it hasn't been called yet. Added `_app_loaded` flag to track initialization state and prevent double-loading.
+**Rule:** `App.up()` now auto-initializes. Manual `App.load_app()` is only needed if you want to load the database/routes without starting the server.
 
 ### Template
 ```

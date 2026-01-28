@@ -92,6 +92,9 @@ const SESSION_TIMEOUT_SECONDS = parse(Int, get(ENV, "SESSION_TIMEOUT", "28800"))
 const AUTH_USER_ID_KEY = :__auth_user_id
 const AUTH_USER_KEY = :__auth_user
 
+# Track whether load_app() has been called
+const _app_loaded = Ref(false)
+
 """
     authenticate_user(username::String, password::String) -> Union{User, Nothing}
 
@@ -242,21 +245,31 @@ Load the full application (database, routes, etc.)
 Call this after `using App` to fully initialize.
 """
 function load_app()
+    if _app_loaded[]
+        @debug "Application already loaded, skipping"
+        return
+    end
+
     # Initialize database
     init_database()
 
     # Load routes (this includes controllers)
     include(joinpath(@__DIR__, "..", "config", "routes.jl"))
 
+    _app_loaded[] = true
     @info "Application loaded successfully"
 end
 
 """
     up(port::Int=$PORT; kwargs...)
 
-Start the web server.
+Start the web server. Automatically calls load_app() if not already called.
 """
 function up(port::Int=PORT; kwargs...)
+    if !_app_loaded[]
+        @info "Auto-loading application (load_app() was not called)"
+        load_app()
+    end
     @info "Starting server on port $port"
     Genie.up(port; kwargs...)
 end
