@@ -421,6 +421,46 @@
     align-items: center;
 }
 
+/* Navigation link styling */
+.nav-link {
+    color: var(--qci-white);
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+    background-color: var(--qci-light-navy);
+}
+
+/* Navbar divider */
+.nav-divider {
+    width: 1px;
+    height: 20px;
+    background-color: rgba(255, 255, 255, 0.3);
+    margin: 0 4px;
+}
+
+/* Nav text (for unauthenticated state) */
+.nav-text {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    padding: 8px 12px;
+}
+
+/* Make logo a clickable link */
+a.logo {
+    color: var(--qci-white);
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+a.logo:hover {
+    opacity: 0.9;
+}
+
 /* ========================================
    Tool Detail View Styles
    ======================================== */

@@ -40,6 +40,8 @@ git checkout [branch-name-from-unit]
 
 #### 4a. Run All Tests
 
+> **WARNING:** Do NOT use `julia` commands in bash. Use `mcp__julia-repl__exec_repl` tool instead.
+
 Use the Julia REPL MCP (not bash):
 ```julia
 # In MCP REPL:

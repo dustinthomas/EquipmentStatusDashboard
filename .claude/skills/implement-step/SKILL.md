@@ -53,6 +53,8 @@ Follow the unit's task description and acceptance criteria:
 
 ### Step 6: Run Tests
 
+> **WARNING:** Do NOT use `julia` commands in bash. Use `mcp__julia-repl__exec_repl` tool instead.
+
 Use the Julia REPL MCP (not bash):
 ```julia
 # In MCP REPL:
