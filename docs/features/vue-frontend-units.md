@@ -339,8 +339,9 @@ Implement tool history view with filtering and export.
 ## Milestone 5: Cleanup & Testing
 
 ### Unit 5.1: Navigation & Polish
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/vue-nav-polish`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/28
 **Depends on:** 2.2, 4.3
 
 **Task:**
