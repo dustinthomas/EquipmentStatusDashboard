@@ -1005,9 +1005,12 @@ const app = createApp({
             <nav class="navbar">
                 <div class="container">
                     <div class="navbar-content">
-                        <span class="logo">QCI Equipment Status</span>
+                        <a href="/vue" class="logo" @click.prevent="navigateToDashboard">QCI Equipment Status</a>
                         <div class="nav-links">
                             <template v-if="auth.isAuthenticated">
+                                <a href="/vue" class="nav-link" @click.prevent="navigateToDashboard">Dashboard</a>
+                                <a v-if="isAdmin" href="/admin" class="nav-link">Admin</a>
+                                <span class="nav-divider"></span>
                                 <span class="user-info">{{ userName }}</span>
                                 <button
                                     class="btn btn-outline btn-sm"
@@ -1016,6 +1019,9 @@ const app = createApp({
                                 >
                                     Logout
                                 </button>
+                            </template>
+                            <template v-else-if="appReady">
+                                <span class="nav-text">Please sign in</span>
                             </template>
                         </div>
                     </div>
