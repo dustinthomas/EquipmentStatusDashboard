@@ -1,6 +1,6 @@
 #!/bin/bash
 # MCP REPL Pane Manager for WezTerm
-# Manages the Julia MCP REPL session in a side pane
+# Cross-platform: works on Linux, macOS, and Windows (Git Bash/MSYS2)
 #
 # Usage: ./scripts/mcp.sh <command>
 #
@@ -19,8 +19,25 @@
 
 set -e
 
-# Configuration
-PROJECT_DIR="/home/dustin/Git/Projects/EquipmentStatusDashboard"
+# ============================================================================
+# Platform Detection and Configuration
+# ============================================================================
+
+detect_os() {
+    case "$(uname -s)" in
+        Linux*)     echo "linux" ;;
+        Darwin*)    echo "macos" ;;
+        CYGWIN*|MINGW*|MSYS*) echo "windows" ;;
+        *)          echo "unknown" ;;
+    esac
+}
+
+OS_TYPE=$(detect_os)
+
+# Auto-detect project directory (parent of scripts directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 JULIA_CMD="julia --project=. -i scripts/start_mcp_repl.jl"
 MCP_PORT=3000
 PANE_WIDTH_PERCENT=40
@@ -37,30 +54,87 @@ NC='\033[0m' # No Color
 # ============================================================================
 
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${BLUE}[INFO]${NC} $1" >&2
 }
 
 log_success() {
-    echo -e "${GREEN}[OK]${NC} $1"
+    echo -e "${GREEN}[OK]${NC} $1" >&2
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo -e "${YELLOW}[WARN]${NC} $1" >&2
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
-# Check if MCP server is listening on the port
+# Check for required dependencies
+check_dependencies() {
+    local missing=()
+
+    if ! command -v wezterm &> /dev/null; then
+        missing+=("wezterm")
+    fi
+
+    if ! command -v jq &> /dev/null; then
+        missing+=("jq")
+    fi
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        log_error "Missing required dependencies: ${missing[*]}"
+        echo ""
+        echo "Installation instructions:"
+        for dep in "${missing[@]}"; do
+            case "$dep" in
+                jq)
+                    case "$OS_TYPE" in
+                        windows)
+                            echo "  jq: winget install jqlang.jq"
+                            echo "      or: pacman -S jq (MSYS2)"
+                            ;;
+                        macos)
+                            echo "  jq: brew install jq"
+                            ;;
+                        linux)
+                            echo "  jq: sudo apt install jq (Debian/Ubuntu)"
+                            echo "      or: sudo dnf install jq (Fedora)"
+                            ;;
+                    esac
+                    ;;
+                wezterm)
+                    echo "  wezterm: https://wezfurlong.org/wezterm/installation.html"
+                    ;;
+            esac
+        done
+        exit 1
+    fi
+}
+
+# Check if MCP server is listening on the port (cross-platform)
 is_mcp_running() {
-    ss -tlnp 2>/dev/null | grep -q ":$MCP_PORT " && return 0
+    case "$OS_TYPE" in
+        windows)
+            netstat -an 2>/dev/null | grep -qE "[:.]$MCP_PORT[[:space:]].*LISTENING" && return 0
+            ;;
+        *)
+            ss -tlnp 2>/dev/null | grep -q ":$MCP_PORT " && return 0
+            ;;
+    esac
     return 1
 }
 
-# Get PID of process on MCP port
+# Get PID of process on MCP port (cross-platform)
 get_mcp_pid() {
-    ss -tlnp 2>/dev/null | grep ":$MCP_PORT " | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1
+    case "$OS_TYPE" in
+        windows)
+            # On Windows, netstat -ano shows PID in last column
+            netstat -ano 2>/dev/null | grep -E "[:.]$MCP_PORT[[:space:]].*LISTENING" | awk '{print $NF}' | head -1
+            ;;
+        *)
+            ss -tlnp 2>/dev/null | grep ":$MCP_PORT " | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1
+            ;;
+    esac
 }
 
 # Get the current pane ID (where Claude Code is running)
@@ -157,12 +231,28 @@ pane_has_julia() {
     return 1
 }
 
+# Kill process by PID (cross-platform)
+kill_process() {
+    local pid=$1
+    case "$OS_TYPE" in
+        windows)
+            taskkill //F //PID "$pid" 2>/dev/null || true
+            ;;
+        *)
+            kill -9 "$pid" 2>/dev/null || true
+            ;;
+    esac
+}
+
 # ============================================================================
 # Command Implementations
 # ============================================================================
 
 cmd_status() {
     echo "=== MCP REPL Status ==="
+    echo ""
+    echo "Platform: $OS_TYPE"
+    echo "Project:  $PROJECT_DIR"
     echo ""
 
     local current_pane
@@ -291,7 +381,7 @@ cmd_stop() {
         local pid
         pid=$(get_mcp_pid)
         log_info "Force killing process $pid..."
-        kill -9 "$pid" 2>/dev/null || true
+        kill_process "$pid"
         sleep 1
     fi
 
@@ -344,7 +434,7 @@ cmd_close() {
 # ============================================================================
 
 show_usage() {
-    echo "MCP REPL Pane Manager for WezTerm"
+    echo "MCP REPL Pane Manager for WezTerm (Cross-platform)"
     echo ""
     echo "Usage: $0 <command>"
     echo ""
@@ -355,10 +445,17 @@ show_usage() {
     echo "  stop     Stop the MCP REPL session"
     echo "  restart  Restart the MCP REPL"
     echo "  close    Close the MCP pane entirely"
+    echo ""
+    echo "Detected platform: $OS_TYPE"
 }
 
 main() {
     local command="${1:-}"
+
+    # Check dependencies for all commands except help
+    if [ -n "$command" ] && [ "$command" != "-h" ] && [ "$command" != "--help" ] && [ "$command" != "help" ]; then
+        check_dependencies
+    fi
 
     if [ -z "$command" ]; then
         show_usage
