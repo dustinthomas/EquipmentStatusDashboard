@@ -44,20 +44,19 @@ This is the rulebook for Claude Code sessions working in this repository.
 
 ## Development Commands
 
-**IMPORTANT:** Use the Julia REPL MCP server for all Julia operations. See "Julia REPL" section below.
+**IMPORTANT:** Use the Julia MCP REPL for ALL Julia operations. NEVER use `julia` in bash.
 
 ```bash
 # Docker build/run (these use bash, not Julia)
 docker build -t qci-status:latest .
 docker run -d -p 8000:8000 -v qci-data:/data qci-status:latest
-
-# Restart MCP REPL (when struct changes require Julia restart)
-bash scripts/restart_mcp.sh
 ```
 
-## Julia REPL (CRITICAL)
+## Julia MCP REPL (CRITICAL)
 
-A Julia REPL MCP server is available. **ALWAYS use this instead of `julia` in bash.**
+A Julia REPL runs as an MCP server in a WezTerm side pane. **ALWAYS use the MCP REPL tools for Julia operations.**
+
+> **Skills and Implementers:** You MUST use `mcp__julia-repl__exec_repl` for running Julia code, tests, and app operations. NEVER use `julia` commands in bash.
 
 ### Why Use the MCP REPL?
 
@@ -70,23 +69,34 @@ A Julia REPL MCP server is available. **ALWAYS use this instead of `julia` in ba
 
 | Tool | Purpose |
 |------|---------|
-| `mcp__julia-repl__exec_repl` | Execute Julia code |
+| `mcp__julia-repl__exec_repl` | **PRIMARY** - Execute any Julia code |
 | `mcp__julia-repl__investigate_environment` | Check project/package status |
 | `mcp__julia-repl__remove-trailing-whitespace` | Clean up edited files |
 | `mcp__julia-repl__usage_instructions` | Get detailed REPL guidance |
 
-### Common Operations
+### Managing the MCP REPL Pane
+
+Use `scripts/mcp.sh` to manage the REPL session in WezTerm:
+
+```bash
+./scripts/mcp.sh status   # Check if pane exists and REPL is running
+./scripts/mcp.sh open     # Open a side pane (if not already open)
+./scripts/mcp.sh start    # Start the MCP REPL (opens pane if needed)
+./scripts/mcp.sh stop     # Stop the REPL session
+./scripts/mcp.sh restart  # Restart the REPL (for struct changes)
+./scripts/mcp.sh close    # Close the pane entirely
+```
+
+### Common Operations (via MCP REPL)
 
 **Starting the App:**
 ```julia
-# In MCP REPL (not bash!):
+# Use mcp__julia-repl__exec_repl with this expression:
 using Genie; Genie.loadapp()
 App.up(8000; async=true)  # Auto-calls load_app() if needed
 ```
 
 > Note: `App.up()` automatically calls `App.load_app()` if it hasn't been called yet.
-> You can still call `App.load_app()` explicitly if you need to initialize
-> the database/routes without starting the server.
 
 **Stopping/Restarting Server:**
 ```julia
@@ -111,7 +121,7 @@ using SearchLight; SearchLight.Migration.up()
 
 ### Rules
 
-1. **NEVER** use `julia` commands in bash - always use the MCP REPL
+1. **ALWAYS** use `mcp__julia-repl__exec_repl` for Julia code - NEVER use `julia` in bash
 2. **Check before assuming** - Use `@doc`, `Pkg.status()`, or read existing code
 3. **Use `let` blocks** for temporary computations to avoid namespace pollution
 4. **Don't modify environment** - Ask the user if dependencies are missing
@@ -126,9 +136,9 @@ Restart is needed when you modify:
 
 To restart:
 ```bash
-bash scripts/restart_mcp.sh
+./scripts/mcp.sh restart
 ```
-Wait ~20 seconds, then reload the app in the new REPL.
+Wait ~20 seconds for Julia to initialize, then the MCP tools will reconnect automatically.
 
 ## Document Hierarchy
 
@@ -205,7 +215,9 @@ EquipmentStatusDashboard/
 │   └── server.bat         # Start server (Windows)
 │
 ├── scripts/               # Development scripts
-│   └── restart_mcp.sh     # Restart MCP REPL in WezTerm
+│   ├── mcp.sh             # MCP REPL pane manager (status/start/stop/restart/close)
+│   ├── restart_mcp.sh     # Wrapper for mcp.sh restart (backwards compat)
+│   └── start_mcp_repl.jl  # Julia script to start MCP server
 │
 ├── src/                   # Source code
 │   ├── App.jl             # Main application module
