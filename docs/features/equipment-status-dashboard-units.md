@@ -380,7 +380,7 @@ Add sorting and filtering to dashboard. Sortable columns: name, state, area, las
 ## Milestone 5: Admin Features
 
 ### Unit 5.1: Admin Authorization Middleware
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/admin-auth`
 **Depends on:** 3.3
 
@@ -388,14 +388,20 @@ Add sorting and filtering to dashboard. Sortable columns: name, state, area, las
 Add middleware to protect admin routes. Only users with role="admin" can access `/admin/*` routes.
 
 **Acceptance Criteria:**
-- [ ] Non-admin users get 403 on `/admin/*` routes
-- [ ] Admin users can access `/admin/*` routes
-- [ ] 403 page shows friendly message
-- [ ] Redirect to dashboard for non-admins
+- [x] Non-admin users get 403 on `/admin/*` routes
+- [x] Admin users can access `/admin/*` routes
+- [x] 403 page shows friendly message
+- [x] Redirect to dashboard for non-admins
+
+**Implementation Notes:**
+- `require_admin()` middleware redirects non-admins to `/vue?error=forbidden`
+- `require_admin_api()` middleware returns JSON 403 for API routes
+- Vue app displays friendly "Admin access required" message when error param is present
+- Admin link in navbar only shown to users with admin role
 
 **Files to create/modify:**
 - `src/lib/auth_helpers.jl` - Add admin check middleware
-- `src/views/errors/403.jl.html` - Forbidden error page
+- `src/views/errors/403.jl.html` - Forbidden error page (handled via Vue redirect instead)
 - `config/routes.jl` - Add admin middleware
 
 ---
