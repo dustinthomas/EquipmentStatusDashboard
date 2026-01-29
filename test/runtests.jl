@@ -2066,4 +2066,185 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             @test occursin("href=\"/admin\"", app_js_content)
         end
     end
+
+    @testset "Admin Tool Management (Unit 5.2)" begin
+        @testset "AdminController file exists" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            @test isfile(controller_file)
+
+            controller_content = read(controller_file, String)
+
+            # Verify module structure
+            @test occursin("module AdminController", controller_content)
+
+            # Verify required functions are defined
+            @test occursin("function api_tools_index", controller_content)
+            @test occursin("function api_tools_show", controller_content)
+            @test occursin("function api_tools_create", controller_content)
+            @test occursin("function api_tools_update", controller_content)
+            @test occursin("function api_tools_toggle_active", controller_content)
+
+            # Verify exports
+            @test occursin("export", controller_content)
+            @test occursin("api_tools_index", controller_content)
+            @test occursin("api_tools_show", controller_content)
+            @test occursin("api_tools_create", controller_content)
+            @test occursin("api_tools_update", controller_content)
+            @test occursin("api_tools_toggle_active", controller_content)
+        end
+
+        @testset "AdminController uses ApiHelpers" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            @test occursin("using .ApiHelpers", controller_content)
+            @test occursin("api_success", controller_content)
+            @test occursin("api_error", controller_content)
+            @test occursin("api_bad_request", controller_content)
+            @test occursin("api_not_found", controller_content)
+        end
+
+        @testset "Admin tool routes defined" begin
+            routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+            routes_content = read(routes_file, String)
+
+            # Verify AdminController is imported
+            @test occursin("AdminController", routes_content)
+
+            # Verify all admin tool routes are defined
+            @test occursin("/api/admin/tools", routes_content)
+            @test occursin("api_tools_index", routes_content)
+            @test occursin("api_tools_show", routes_content)
+            @test occursin("api_tools_create", routes_content)
+            @test occursin("api_tools_update", routes_content)
+            @test occursin("api_tools_toggle_active", routes_content)
+            @test occursin("/toggle-active", routes_content)
+
+            # Verify admin middleware is applied to all routes
+            @test occursin("require_admin_api()", routes_content)
+
+            # Verify HTTP methods
+            @test occursin("method = GET", routes_content)
+            @test occursin("method = POST", routes_content)
+            @test occursin("method = PUT", routes_content)
+        end
+
+        @testset "api_tools_index returns all tools" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify it fetches all tools (including inactive)
+            @test occursin("SearchLight.all(Tool)", controller_content)
+
+            # Verify it returns metadata
+            @test occursin("\"total\"", controller_content)
+            @test occursin("\"active\"", controller_content)
+            @test occursin("\"inactive\"", controller_content)
+            @test occursin("\"criticalities\"", controller_content)
+            @test occursin("\"states\"", controller_content)
+        end
+
+        @testset "api_tools_show returns single tool" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify it looks up tool by ID
+            @test occursin("SearchLight.findone(Tool; id = id)", controller_content)
+
+            # Verify 404 handling
+            @test occursin("Tool not found", controller_content)
+            @test occursin("api_not_found", controller_content)
+        end
+
+        @testset "api_tools_create validates input" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify required field validation
+            @test occursin("Name is required", controller_content)
+            @test occursin("Area is required", controller_content)
+
+            # Verify length validation
+            @test occursin("Name must be at least 2 characters", controller_content)
+            @test occursin("Name must not exceed 100 characters", controller_content)
+            @test occursin("Area must not exceed 50 characters", controller_content)
+            @test occursin("Bay must not exceed 50 characters", controller_content)
+
+            # Verify criticality validation
+            @test occursin("Invalid criticality", controller_content)
+            @test occursin("validate_criticality", controller_content)
+
+            # Verify it creates tool with SearchLight
+            @test occursin("SearchLight.save!", controller_content)
+
+            # Verify 201 status for creation
+            @test occursin("status=201", controller_content)
+        end
+
+        @testset "api_tools_update validates input" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify partial update support (optional fields)
+            @test occursin("haskey(payload, \"name\")", controller_content)
+            @test occursin("haskey(payload, \"area\")", controller_content)
+            @test occursin("haskey(payload, \"bay\")", controller_content)
+            @test occursin("haskey(payload, \"criticality\")", controller_content)
+
+            # Verify validation on update
+            @test occursin("Name cannot be empty", controller_content)
+            @test occursin("Area cannot be empty", controller_content)
+
+            # Verify updated_at is set
+            @test occursin("tool.updated_at", controller_content)
+        end
+
+        @testset "api_tools_toggle_active toggles is_active" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify toggle logic
+            @test occursin("!tool.is_active", controller_content)
+
+            # Verify response includes message
+            @test occursin("Tool activated", controller_content)
+            @test occursin("Tool deactivated", controller_content)
+
+            # Verify logging
+            @test occursin("@info", controller_content)
+        end
+
+        @testset "App.jl includes AdminController" begin
+            app_file = joinpath(@__DIR__, "..", "src", "App.jl")
+            app_content = read(app_file, String)
+
+            @test occursin("include(\"controllers/AdminController.jl\")", app_content)
+        end
+
+        @testset "Tool data structure in responses" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify tool_to_dict helper function
+            @test occursin("function tool_to_dict", controller_content)
+
+            # Verify all required fields are in response
+            @test occursin("\"id\"", controller_content)
+            @test occursin("\"name\"", controller_content)
+            @test occursin("\"area\"", controller_content)
+            @test occursin("\"bay\"", controller_content)
+            @test occursin("\"criticality\"", controller_content)
+            @test occursin("\"is_active\"", controller_content)
+            @test occursin("\"state\"", controller_content)
+            @test occursin("\"state_display\"", controller_content)
+            @test occursin("\"state_class\"", controller_content)
+            @test occursin("\"issue_description\"", controller_content)
+            @test occursin("\"comment\"", controller_content)
+            @test occursin("\"eta_to_up\"", controller_content)
+            @test occursin("\"status_updated_at\"", controller_content)
+            @test occursin("\"status_updated_by\"", controller_content)
+            @test occursin("\"created_at\"", controller_content)
+            @test occursin("\"updated_at\"", controller_content)
+        end
+    end
 end

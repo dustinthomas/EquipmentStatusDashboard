@@ -6,7 +6,7 @@ using Genie.Renderer: redirect
 using Genie.Renderer.Json: json
 
 # Import modules from App (already loaded by App.jl)
-using ..App: AuthHelpers, AuthController, DashboardController
+using ..App: AuthHelpers, AuthController, DashboardController, AdminController
 
 # Health check endpoint - returns JSON status for monitoring
 route("/health", method = GET) do
@@ -194,11 +194,51 @@ route("/api/admin/tools", method = GET) do
     if admin_result !== nothing
         return admin_result
     end
-    # Placeholder - will be implemented in Unit 5.2
-    json(Dict(
-        "message" => "Admin tools endpoint. Full implementation in Unit 5.2.",
-        "tools" => []
-    ))
+    AdminController.api_tools_index()
+end
+
+# API: Admin - Get single tool details (including inactive)
+# GET /api/admin/tools/:id
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/tools/:id::Int", method = GET) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    AdminController.api_tools_show()
+end
+
+# API: Admin - Create new tool
+# POST /api/admin/tools
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/tools", method = POST) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    AdminController.api_tools_create()
+end
+
+# API: Admin - Update tool
+# PUT /api/admin/tools/:id
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/tools/:id::Int", method = PUT) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    AdminController.api_tools_update()
+end
+
+# API: Admin - Toggle tool active status (soft delete/restore)
+# POST /api/admin/tools/:id/toggle-active
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/tools/:id::Int/toggle-active", method = POST) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    AdminController.api_tools_toggle_active()
 end
 
 # API: Admin - Get all users

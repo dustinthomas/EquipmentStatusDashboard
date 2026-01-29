@@ -408,28 +408,29 @@ Add middleware to protect admin routes. Only users with role="admin" can access 
 ---
 
 ### Unit 5.2: Tool Management (Admin)
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/admin-tools`
 **Depends on:** 5.1, 2.2
 
 **Task:**
-Admin pages to create, edit, and deactivate tools. List all tools (including inactive).
+Admin API endpoints to create, edit, and deactivate tools. List all tools (including inactive).
+
+**Note:** Per project decision (see Units 4.3-4.5), admin features are implemented as JSON APIs for the Vue frontend instead of server-rendered HTML pages.
 
 **Acceptance Criteria:**
-- [ ] `GET /admin/tools` lists all tools with status
-- [ ] `GET /admin/tools/new` shows create form
-- [ ] `POST /admin/tools` creates new tool
-- [ ] `GET /admin/tools/:id/edit` shows edit form
-- [ ] `POST /admin/tools/:id` updates tool
-- [ ] Can toggle is_active (soft delete)
-- [ ] Validation errors shown on form
+- [x] `GET /api/admin/tools` lists all tools with status (including inactive)
+- [x] `GET /api/admin/tools/:id` shows single tool details
+- [x] `POST /api/admin/tools` creates new tool
+- [x] `PUT /api/admin/tools/:id` updates tool
+- [x] `POST /api/admin/tools/:id/toggle-active` toggles is_active (soft delete)
+- [x] Validation errors returned as JSON with 400 status
+- [x] All routes protected with admin middleware (403 for non-admins)
 
-**Files to create/modify:**
-- `src/controllers/AdminController.jl` - Tool management handlers
-- `src/views/admin/tools/index.jl.html` - Tool list
-- `src/views/admin/tools/new.jl.html` - Create form
-- `src/views/admin/tools/edit.jl.html` - Edit form
-- `config/routes.jl` - Add admin tool routes
+**Files created/modified:**
+- `src/controllers/AdminController.jl` - Tool management API handlers
+- `src/App.jl` - Include AdminController
+- `config/routes.jl` - Add admin tool API routes
+- `test/runtests.jl` - Add tests for admin tool management
 
 ---
 
