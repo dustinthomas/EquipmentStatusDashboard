@@ -131,6 +131,17 @@ end
 # Admin Routes
 # ========================================
 
+# Admin: Index - redirect to tools management
+# GET /admin - Redirects to /admin/tools
+# Protected: requires admin role
+route("/admin", method = GET) do
+    admin_result = AuthHelpers.require_admin()
+    if admin_result !== nothing
+        return admin_result
+    end
+    redirect("/admin/tools")
+end
+
 # Admin: Tools list
 # GET /admin/tools - List all tools (including inactive)
 # Protected: requires admin role (redirects to dashboard if not admin)

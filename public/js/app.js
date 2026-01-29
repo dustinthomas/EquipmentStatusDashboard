@@ -323,7 +323,10 @@ const app = createApp({
          */
         async function fetchTools() {
             dashboard.loading = true;
-            dashboard.error = null;
+            // Preserve forbidden error message (from admin redirect), clear other errors
+            if (dashboard.error && !dashboard.error.includes('Admin access required')) {
+                dashboard.error = null;
+            }
 
             try {
                 const queryString = buildFilterQueryString();
