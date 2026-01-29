@@ -13,48 +13,9 @@ route("/health", method = GET) do
     json(Dict("status" => "ok"))
 end
 
-# Root redirect to Vue app (Vue handles its own authentication)
+# Root redirect to Vue app
 route("/", method = GET) do
     redirect("/vue")
-end
-
-# Main dashboard route
-# Protected: requires authentication
-route("/dashboard", method = GET) do
-    auth_result = AuthHelpers.require_authentication()
-    if auth_result !== nothing
-        return auth_result
-    end
-    DashboardController.index()
-end
-
-# Dashboard filter endpoint for HTMX partial updates
-# Returns just the table HTML without the full page layout
-route("/dashboard/filter", method = GET) do
-    auth_result = AuthHelpers.require_authentication()
-    if auth_result !== nothing
-        return auth_result
-    end
-    DashboardController.filter_table()
-end
-
-# ========================================
-# Authentication Routes
-# ========================================
-
-# Login page
-route("/login", method = GET) do
-    AuthController.login_form()
-end
-
-# Login form submission
-route("/login", method = POST) do
-    AuthController.login()
-end
-
-# Logout
-route("/logout", method = GET) do
-    AuthController.logout()
 end
 
 # ========================================

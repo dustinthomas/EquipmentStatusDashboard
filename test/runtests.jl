@@ -31,32 +31,40 @@ ENV["SEARCHLIGHT_ENV"] = "test"
         @test isfile(joinpath(@__DIR__, "..", "db", "connection.yml"))
     end
 
-    @testset "Layout and Styles" begin
-        # Test base layout template exists
-        layout_path = joinpath(@__DIR__, "..", "src", "views", "layouts", "app.jl.html")
-        @test isfile(layout_path)
+    @testset "Vue Frontend and Styles" begin
+        # Test Vue app HTML shell exists
+        vue_html_path = joinpath(@__DIR__, "..", "public", "index.html")
+        @test isfile(vue_html_path)
 
-        # Test layout has required HTML5 structure
-        layout_content = read(layout_path, String)
-        @test occursin("<!DOCTYPE html>", layout_content)
-        @test occursin("<html", layout_content)
-        @test occursin("<head>", layout_content)
-        @test occursin("<body>", layout_content)
+        # Test Vue HTML has required HTML5 structure
+        vue_content = read(vue_html_path, String)
+        @test occursin("<!DOCTYPE html>", vue_content)
+        @test occursin("<html", vue_content)
+        @test occursin("<head>", vue_content)
+        @test occursin("<body>", vue_content)
 
-        # Test layout includes Raleway font
-        @test occursin("Raleway", layout_content)
-        @test occursin("fonts.googleapis.com", layout_content)
+        # Test fonts are loaded via CSS (qci-theme.css imports Raleway from Google Fonts)
+        theme_css = read(joinpath(@__DIR__, "..", "public", "css", "qci-theme.css"), String)
+        @test occursin("Raleway", theme_css)
+        @test occursin("fonts.googleapis.com", theme_css)
 
-        # Test layout has navigation
-        @test occursin("<nav", layout_content)
-        @test occursin("navbar", layout_content)
+        # Test Vue HTML references QCI CSS
+        @test occursin("qci.css", vue_content)
 
-        # Test layout has footer with QCI copyright
-        @test occursin("<footer", layout_content)
-        @test occursin("QCI", layout_content)
+        # Test Vue HTML loads Vue 3 from CDN
+        @test occursin("vue", lowercase(vue_content))
 
-        # Test layout references QCI CSS
-        @test occursin("qci.css", layout_content)
+        # Test Vue HTML has app mount point
+        @test occursin("id=\"app\"", vue_content)
+
+        # Test Vue app JavaScript exists
+        @test isfile(joinpath(@__DIR__, "..", "public", "js", "app.js"))
+
+        # Test Vue app has key components
+        app_js = read(joinpath(@__DIR__, "..", "public", "js", "app.js"), String)
+        @test occursin("createApp", app_js)  # Vue 3 app creation
+        @test occursin("login", lowercase(app_js))  # Login functionality
+        @test occursin("dashboard", lowercase(app_js))  # Dashboard view
 
         # Test CSS files exist
         @test isfile(joinpath(@__DIR__, "..", "public", "css", "qci.css"))
@@ -725,10 +733,10 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 controller_file = joinpath(@__DIR__, "..", "src", "controllers", "DashboardController.jl")
                 @test isfile(controller_file)
 
-                # Verify key functions are defined
+                # Verify key functions are defined (API handlers only, HTML removed)
                 controller_content = read(controller_file, String)
                 @test occursin("module DashboardController", controller_content)
-                @test occursin("function index", controller_content)
+                @test occursin("api_index", controller_content)
                 @test occursin("find_active_tools", controller_content)
                 @test occursin("state_sort_order", controller_content)
                 @test occursin("truncate_text", controller_content)
@@ -737,25 +745,24 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test occursin("state_display_text", controller_content)
             end
 
-            @testset "Dashboard view template exists" begin
-                view_file = joinpath(@__DIR__, "..", "src", "views", "dashboard", "index.jl.html")
-                @test isfile(view_file)
+            @testset "Vue dashboard component exists" begin
+                # Vue app handles dashboard rendering via JavaScript
+                app_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+                @test isfile(app_file)
 
-                # Verify key elements are present
-                view_content = read(view_file, String)
-                @test occursin("Equipment Status Dashboard", view_content)
-                @test occursin("<table", view_content)
-                @test occursin("status-badge", view_content)
-                @test occursin("tool-row", view_content)
-                @test occursin("/tools/", view_content)  # Links to tool detail
+                # Verify key dashboard elements are in Vue app
+                app_content = read(app_file, String)
+                @test occursin("dashboard", lowercase(app_content))
+                @test occursin("tools", lowercase(app_content))
+                @test occursin("status", lowercase(app_content))
             end
 
-            @testset "Dashboard route defined" begin
+            @testset "Dashboard API route defined" begin
                 routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
                 routes_content = read(routes_file, String)
 
                 @test occursin("DashboardController", routes_content)
-                @test occursin("/dashboard", routes_content)
+                @test occursin("/api/tools", routes_content)  # API endpoint
             end
 
             @testset "Dashboard styling" begin
@@ -1081,28 +1088,21 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 delete!(ENV, "DATABASE_PATH")
             end
 
-            @testset "Dashboard view with filters" begin
-                view_file = joinpath(@__DIR__, "..", "src", "views", "dashboard", "index.jl.html")
-                @test isfile(view_file)
+            @testset "Vue dashboard filtering and sorting" begin
+                # Vue app handles filtering via JavaScript
+                app_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+                @test isfile(app_file)
 
-                view_content = read(view_file, String)
+                app_content = read(app_file, String)
 
-                # Check filter form elements
-                @test occursin("filter-form", view_content)
-                @test occursin("name=\"state\"", view_content)
-                @test occursin("name=\"area\"", view_content)
-                @test occursin("name=\"search\"", view_content)
-                @test occursin("type=\"submit\"", view_content)
+                # Check filter functionality in Vue app
+                @test occursin("filter", lowercase(app_content))
+                @test occursin("state", lowercase(app_content))
+                @test occursin("area", lowercase(app_content))
+                @test occursin("search", lowercase(app_content))
 
-                # Check sortable headers
-                @test occursin("sortable-header", view_content)
-                @test occursin("sort-link", view_content)
-                @test occursin("sort-indicator", view_content)
-                @test occursin("sort_urls", view_content)
-
-                # Check filter state persistence in URL
-                @test occursin("state_filter", view_content)
-                @test occursin("area_filter", view_content)
+                # Check sort functionality in Vue app
+                @test occursin("sort", lowercase(app_content))
             end
 
             @testset "Dashboard CSS for filters and sorting" begin
@@ -1675,37 +1675,35 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl")
                 @test isfile(controller_file)
 
-                # Verify key functions are defined
+                # Verify key functions are defined (API handlers only, HTML removed)
                 controller_content = read(controller_file, String)
-                @test occursin("login_form", controller_content)
-                @test occursin("login", controller_content)
-                @test occursin("logout", controller_content)
+                @test occursin("api_login", controller_content)
+                @test occursin("api_logout", controller_content)
+                @test occursin("api_me", controller_content)
                 @test occursin("module AuthController", controller_content)
             end
 
-            @testset "Login view template exists" begin
-                view_file = joinpath(@__DIR__, "..", "src", "views", "auth", "login.jl.html")
-                @test isfile(view_file)
+            @testset "Vue login component exists" begin
+                # Vue app handles login via JavaScript
+                app_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+                @test isfile(app_file)
 
-                # Verify key elements are present
-                view_content = read(view_file, String)
-                @test occursin("<form", view_content)
-                @test occursin("action=\"/login\"", view_content)
-                @test occursin("method=\"POST\"", view_content)
-                @test occursin("username", view_content)
-                @test occursin("password", view_content)
-                @test occursin("type=\"submit\"", view_content)
-                @test occursin("error_message", view_content)
+                # Verify key login elements are in Vue app
+                app_content = read(app_file, String)
+                @test occursin("login", lowercase(app_content))
+                @test occursin("username", lowercase(app_content))
+                @test occursin("password", lowercase(app_content))
+                @test occursin("/api/auth/login", app_content)  # API endpoint
             end
 
-            @testset "Auth routes defined" begin
+            @testset "Auth API routes defined" begin
                 routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
                 @test isfile(routes_file)
 
                 routes_content = read(routes_file, String)
-                @test occursin("\"/login\"", routes_content)
-                @test occursin("\"/logout\"", routes_content)
-                @test occursin("GET", routes_content)
+                @test occursin("/api/auth/login", routes_content)
+                @test occursin("/api/auth/logout", routes_content)
+                @test occursin("/api/auth/me", routes_content)
                 @test occursin("POST", routes_content)
             end
 
@@ -1741,29 +1739,29 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test occursin("LAST_ACTIVITY_KEY", helpers_content)
             end
 
-            @testset "Routes use auth middleware" begin
+            @testset "API routes use auth middleware" begin
                 routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
                 routes_content = read(routes_file, String)
 
                 # Verify AuthHelpers is loaded
-                @test occursin("using .AuthHelpers", routes_content)
+                @test occursin("AuthHelpers", routes_content)
 
-                # Verify protected routes use require_authentication
-                @test occursin("require_authentication", routes_content)
+                # Verify protected API routes use require_authentication_api
+                @test occursin("require_authentication_api", routes_content)
 
-                # Verify dashboard route is protected
-                @test occursin("/dashboard", routes_content)
+                # Verify tools API route is protected
+                @test occursin("/api/tools", routes_content)
             end
 
-            @testset "AuthController uses redirect URL" begin
+            @testset "AuthController handles API authentication" begin
                 controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AuthController.jl")
                 controller_content = read(controller_file, String)
 
-                # Verify it imports get_redirect_url
-                @test occursin("get_redirect_url", controller_content)
+                # Verify it imports authenticate_user
+                @test occursin("authenticate_user", controller_content)
 
-                # Verify it uses get_redirect_url after login
-                @test occursin("redirect_url = get_redirect_url", controller_content)
+                # Verify it uses login! for session management
+                @test occursin("login!", controller_content)
             end
 
             @testset "Session timeout configuration" begin
