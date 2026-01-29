@@ -362,8 +362,9 @@ Complete navigation and polish the UI.
 ---
 
 ### Unit 5.2: Remove Old Templates & Final Testing
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/vue-cleanup`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/29
 **Depends on:** 5.1
 
 **Task:**

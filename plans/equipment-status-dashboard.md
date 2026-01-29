@@ -93,7 +93,7 @@ User → Vue App → JSON API → Controller → Model → SQLite
 - QCI branding CSS, stale highlighting, Dockerfile, health/logging
 
 ### Milestone 7: Vue.js Frontend Migration
-- **Status:** In Progress
+- **Status:** Complete
 - **Units:** See `docs/features/vue-frontend-units.md`
 - Progressive migration from server-rendered templates to Vue.js SPA
 - Sub-milestones:
@@ -101,7 +101,7 @@ User → Vue App → JSON API → Controller → Model → SQLite
   - 7.2: Vue App Shell (Complete)
   - 7.3: Dashboard Implementation (Complete)
   - 7.4: Tool Management Views (Complete)
-  - 7.5: Cleanup & Testing (Pending)
+  - 7.5: Cleanup & Testing (Complete)
 
 ## Risks & Mitigations
 
@@ -139,3 +139,4 @@ Frontend (CDN):
 
 - 2026-01-22: Initial plan created from PRD
 - 2026-01-23: Updated plan to reflect Vue.js frontend migration decision; added Milestone 7; updated milestone statuses to reflect actual progress
+- 2026-01-28: Milestone 7 (Vue.js Frontend Migration) complete - all units merged
