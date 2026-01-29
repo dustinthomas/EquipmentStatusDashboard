@@ -436,8 +436,9 @@ Admin API endpoints to create, edit, and deactivate tools. List all tools (inclu
 ---
 
 ### Unit 5.3: User Management (Admin)
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/admin-users`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/32
 **Depends on:** 5.1, 2.1
 
 **Task:**

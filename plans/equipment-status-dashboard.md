@@ -83,8 +83,8 @@ User → Vue App → JSON API → Controller → Model → SQLite
 - Main dashboard with sorting/filtering, tool detail, status update, history view
 
 ### Milestone 5: Admin Features
-- **Status:** In Progress
-- **Units:** 5.1 (Merged), 5.2 (Merged), 5.3 (Implemented)
+- **Status:** Complete
+- **Units:** 5.1 (Merged), 5.2 (Merged), 5.3 (Merged)
 - Tool management, user management, admin authorization
 
 ### Milestone 6: UI Polish & Deployment
@@ -140,3 +140,4 @@ Frontend (CDN):
 - 2026-01-22: Initial plan created from PRD
 - 2026-01-23: Updated plan to reflect Vue.js frontend migration decision; added Milestone 7; updated milestone statuses to reflect actual progress
 - 2026-01-28: Milestone 7 (Vue.js Frontend Migration) complete - all units merged
+- 2026-01-29: Milestone 5 (Admin Features) complete - Unit 5.3 merged
