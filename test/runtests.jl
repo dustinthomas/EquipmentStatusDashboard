@@ -66,6 +66,13 @@ ENV["SEARCHLIGHT_ENV"] = "test"
         @test occursin("login", lowercase(app_js))  # Login functionality
         @test occursin("dashboard", lowercase(app_js))  # Dashboard view
 
+        # Test Vue app has stale status indicator functionality
+        @test occursin("is_stale", app_js)  # Stale flag handling
+        @test occursin("getRowClasses", app_js)  # Row class function
+        @test occursin("stale-indicator", app_js)  # Stale indicator CSS class
+        @test occursin("stale-badge", app_js)  # Stale badge CSS class
+        @test occursin("getStaleThresholdMessage", app_js)  # Tooltip message function
+
         # Test CSS files exist
         @test isfile(joinpath(@__DIR__, "..", "public", "css", "qci.css"))
         @test isfile(joinpath(@__DIR__, "..", "public", "css", "qci-theme.css"))
@@ -786,13 +793,20 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 @test occursin(".tool-row-status-up", css_content)
                 @test occursin(".tool-row-status-maintenance", css_content)
                 @test occursin(".tool-row-status-up-with-issues", css_content)
+
+                # Check for stale status indicator styles
+                @test occursin(".stale-indicator", css_content)
+                @test occursin(".tool-row.stale", css_content)
+                @test occursin(".stale-badge", css_content)
+                @test occursin(".stale-tooltip", css_content)
             end
 
             @testset "Helper functions" begin
                 # Include the standalone dashboard helpers module (no App dependencies)
                 include(joinpath(@__DIR__, "..", "src", "lib", "dashboard_helpers.jl"))
                 using .DashboardHelpers: state_sort_order, truncate_text, format_timestamp,
-                                         state_css_class, state_display_text
+                                         state_css_class, state_display_text,
+                                         is_status_stale, get_stale_threshold_hours
 
                 @testset "state_sort_order" begin
                     @test state_sort_order("DOWN") == 1
@@ -830,6 +844,79 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                     @test state_display_text("MAINTENANCE") == "Maintenance"
                     @test state_display_text("UP_WITH_ISSUES") == "Up with Issues"
                     @test state_display_text("UNKNOWN") == "UNKNOWN"  # Fallback to raw value
+                end
+
+                @testset "get_stale_threshold_hours" begin
+                    # Test default value
+                    delete!(ENV, "STALE_THRESHOLD_HOURS")
+                    @test get_stale_threshold_hours() == 8
+
+                    # Test environment variable
+                    ENV["STALE_THRESHOLD_HOURS"] = "12"
+                    @test get_stale_threshold_hours() == 12
+
+                    # Test invalid value (defaults to 8)
+                    ENV["STALE_THRESHOLD_HOURS"] = "invalid"
+                    @test get_stale_threshold_hours() == 8
+
+                    # Test minimum value (at least 1 hour)
+                    ENV["STALE_THRESHOLD_HOURS"] = "0"
+                    @test get_stale_threshold_hours() == 1
+
+                    ENV["STALE_THRESHOLD_HOURS"] = "-5"
+                    @test get_stale_threshold_hours() == 1
+
+                    # Clean up
+                    delete!(ENV, "STALE_THRESHOLD_HOURS")
+                end
+
+                @testset "is_status_stale" begin
+                    using Dates
+
+                    # Reset threshold to default
+                    delete!(ENV, "STALE_THRESHOLD_HOURS")
+
+                    # Empty timestamp is not stale
+                    @test is_status_stale("") == false
+
+                    # Recent timestamp (now) is not stale
+                    recent = Dates.format(now(), "yyyy-mm-ddTHH:MM:SS")
+                    @test is_status_stale(recent) == false
+
+                    # Old timestamp (10 hours ago) is stale (default threshold is 8 hours)
+                    old = Dates.format(now() - Hour(10), "yyyy-mm-ddTHH:MM:SS")
+                    @test is_status_stale(old) == true
+
+                    # Timestamp exactly at threshold boundary
+                    boundary = Dates.format(now() - Hour(8) - Minute(1), "yyyy-mm-ddTHH:MM:SS")
+                    @test is_status_stale(boundary) == true
+
+                    # Just within threshold
+                    within = Dates.format(now() - Hour(7), "yyyy-mm-ddTHH:MM:SS")
+                    @test is_status_stale(within) == false
+
+                    # Test with custom threshold
+                    ENV["STALE_THRESHOLD_HOURS"] = "4"
+                    five_hours_ago = Dates.format(now() - Hour(5), "yyyy-mm-ddTHH:MM:SS")
+                    @test is_status_stale(five_hours_ago) == true
+
+                    three_hours_ago = Dates.format(now() - Hour(3), "yyyy-mm-ddTHH:MM:SS")
+                    @test is_status_stale(three_hours_ago) == false
+
+                    # Invalid timestamp format
+                    @test is_status_stale("not-a-timestamp") == false
+                    @test is_status_stale("2026") == false
+
+                    # Short timestamp format (16 chars) should work
+                    short_format = Dates.format(now() - Hour(10), "yyyy-mm-ddTHH:MM")
+                    @test is_status_stale(short_format) == true
+
+                    # Timestamp with fractional seconds should work
+                    with_fraction = Dates.format(now() - Hour(10), "yyyy-mm-ddTHH:MM:SS") * ".123"
+                    @test is_status_stale(with_fraction) == true
+
+                    # Clean up
+                    delete!(ENV, "STALE_THRESHOLD_HOURS")
                 end
             end
 

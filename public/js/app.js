@@ -895,6 +895,28 @@ const app = createApp({
             return classes[state] || '';
         }
 
+        /**
+         * Get combined CSS classes for a tool row including stale status.
+         * @param {Object} tool - The tool object
+         * @returns {string} Combined CSS class names
+         */
+        function getRowClasses(tool) {
+            let classes = getRowStatusClass(tool.state);
+            if (tool.is_stale) {
+                classes += ' stale';
+            }
+            return classes;
+        }
+
+        /**
+         * Get the stale threshold message.
+         * @returns {string} Human-readable threshold message
+         */
+        function getStaleThresholdMessage() {
+            const hours = dashboard.meta.stale_threshold_hours || 8;
+            return `Status may be stale (not updated in ${hours}+ hours)`;
+        }
+
         // ========================================
         // Lifecycle
         // ========================================
@@ -982,6 +1004,8 @@ const app = createApp({
             clearFilters,
             handleToolClick,
             getRowStatusClass,
+            getRowClasses,
+            getStaleThresholdMessage,
             handleSortClick,
             isSortable,
             isSortedBy,
@@ -1180,6 +1204,9 @@ const app = createApp({
                                                 <span class="status-badge" :class="toolDetail.tool.state_class">
                                                     {{ toolDetail.tool.state_display }}
                                                 </span>
+                                                <span v-if="toolDetail.tool.is_stale" class="stale-badge stale-tooltip" data-tooltip="Status may be stale">
+                                                    Stale
+                                                </span>
                                             </span>
                                         </div>
 
@@ -1200,7 +1227,16 @@ const app = createApp({
 
                                         <div class="detail-item">
                                             <span class="detail-label">Last Updated</span>
-                                            <span class="detail-value">{{ toolDetail.tool.status_updated_at_formatted || '-' }}</span>
+                                            <span class="detail-value">
+                                                <span
+                                                    v-if="toolDetail.tool.is_stale"
+                                                    class="stale-indicator stale-tooltip"
+                                                    :data-tooltip="getStaleThresholdMessage()"
+                                                >
+                                                    {{ toolDetail.tool.status_updated_at_formatted || '-' }}
+                                                </span>
+                                                <span v-else>{{ toolDetail.tool.status_updated_at_formatted || '-' }}</span>
+                                            </span>
                                         </div>
 
                                         <div class="detail-item">
@@ -1531,7 +1567,7 @@ const app = createApp({
                                             v-for="tool in dashboard.tools"
                                             :key="tool.id"
                                             class="tool-row"
-                                            :class="getRowStatusClass(tool.state)"
+                                            :class="getRowClasses(tool)"
                                             @click="handleToolClick(tool)"
                                         >
                                             <td class="tool-name">{{ tool.name }}</td>
@@ -1545,7 +1581,16 @@ const app = createApp({
                                                 {{ tool.issue_description || '-' }}
                                             </td>
                                             <td>{{ tool.eta_to_up_formatted || '-' }}</td>
-                                            <td>{{ tool.status_updated_at_formatted || '-' }}</td>
+                                            <td>
+                                                <span
+                                                    v-if="tool.is_stale"
+                                                    class="stale-indicator stale-tooltip"
+                                                    :data-tooltip="getStaleThresholdMessage()"
+                                                >
+                                                    {{ tool.status_updated_at_formatted || '-' }}
+                                                </span>
+                                                <span v-else>{{ tool.status_updated_at_formatted || '-' }}</span>
+                                            </td>
                                             <td>{{ tool.status_updated_by || '-' }}</td>
                                         </tr>
                                     </tbody>

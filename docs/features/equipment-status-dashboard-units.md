@@ -499,7 +499,7 @@ Complete CSS styling with QCI branding. Navy headers, status colors, Raleway fon
 ---
 
 ### Unit 6.2: Stale Status Highlighting
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/stale-highlight`
 **Depends on:** 4.1
 
@@ -507,15 +507,25 @@ Complete CSS styling with QCI branding. Navy headers, status colors, Raleway fon
 Highlight tools whose status hasn't been updated in configurable time (default 8 hours). Add visual indicator (faded row or icon).
 
 **Acceptance Criteria:**
-- [ ] Tools not updated in 8+ hours have visual indicator
-- [ ] Threshold configurable via environment variable
-- [ ] Indicator is subtle but noticeable (faded or icon)
-- [ ] Tooltip explains "Status may be stale"
+- [x] Tools not updated in 8+ hours have visual indicator
+- [x] Threshold configurable via environment variable
+- [x] Indicator is subtle but noticeable (faded or icon)
+- [x] Tooltip explains "Status may be stale"
 
-**Files to create/modify:**
-- `src/controllers/DashboardController.jl` - Add stale check
-- `src/views/dashboard/index.jl.html` - Add stale indicator
-- `public/css/qci.css` - Stale styling
+**Implementation Notes:**
+- Added `is_status_stale()` and `get_stale_threshold_hours()` functions to `DashboardHelpers`
+- API responses include `is_stale` boolean for each tool and `stale_threshold_hours` in metadata
+- Stale threshold configurable via `STALE_THRESHOLD_HOURS` environment variable (default: 8)
+- Dashboard rows show faded background and clock icon indicator for stale tools
+- Tool detail view shows "Stale" badge next to status when stale
+- Tooltips show "Status may be stale (not updated in X+ hours)"
+
+**Files created/modified:**
+- `src/lib/dashboard_helpers.jl` - Added stale status detection functions
+- `src/controllers/DashboardController.jl` - Added `is_stale` field to API responses
+- `public/css/qci.css` - Added stale indicator CSS styles
+- `public/js/app.js` - Added stale indicator display in Vue frontend
+- `test/runtests.jl` - Added tests for stale status functionality
 
 ---
 

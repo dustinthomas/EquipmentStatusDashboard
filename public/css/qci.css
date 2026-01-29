@@ -779,3 +779,112 @@ select option.status-down { color: #e74c3c; }
     background-color: var(--qci-dark-navy);
     color: var(--qci-white);
 }
+
+/* ========================================
+   Stale Status Indicator Styles
+   ======================================== */
+
+/* Stale indicator icon - subtle clock icon before timestamp */
+.stale-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stale-indicator::before {
+    content: '\231A';  /* Clock symbol */
+    font-size: 0.9em;
+    opacity: 0.6;
+}
+
+/* Stale row styling - subtle fading effect */
+.tool-row.stale {
+    background-color: rgba(128, 128, 128, 0.08);
+}
+
+.tool-row.stale:hover {
+    background-color: rgba(128, 128, 128, 0.15);
+}
+
+/* Override status background colors for stale rows */
+.tool-row.stale.tool-row-status-up {
+    background-color: rgba(46, 204, 113, 0.03);
+}
+
+.tool-row.stale.tool-row-status-up:hover {
+    background-color: rgba(46, 204, 113, 0.08);
+}
+
+.tool-row.stale.tool-row-status-up-with-issues {
+    background-color: rgba(243, 156, 18, 0.05);
+}
+
+.tool-row.stale.tool-row-status-up-with-issues:hover {
+    background-color: rgba(243, 156, 18, 0.12);
+}
+
+.tool-row.stale.tool-row-status-maintenance {
+    background-color: rgba(230, 126, 34, 0.05);
+}
+
+.tool-row.stale.tool-row-status-maintenance:hover {
+    background-color: rgba(230, 126, 34, 0.12);
+}
+
+.tool-row.stale.tool-row-status-down {
+    background-color: rgba(231, 76, 60, 0.05);
+}
+
+.tool-row.stale.tool-row-status-down:hover {
+    background-color: rgba(231, 76, 60, 0.12);
+}
+
+/* Stale badge - shown next to status in tool detail */
+.stale-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: rgba(128, 128, 128, 0.1);
+    color: #666;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    margin-left: 8px;
+}
+
+.stale-badge::before {
+    content: '\231A';  /* Clock symbol */
+    font-size: 0.9em;
+}
+
+/* Tooltip for stale status */
+.stale-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.stale-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background-color: #333;
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    z-index: 1000;
+    margin-bottom: 4px;
+}
+
+.stale-tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
