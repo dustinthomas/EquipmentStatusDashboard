@@ -107,8 +107,16 @@ App.up(8000)         # Restart without reloading
 
 **Running Tests:**
 ```julia
-using Pkg; Pkg.test()
+# Use the test runner (captures output to file to prevent REPL freeze)
+include("test/test_runner.jl")
+run_tests()  # Returns summary dict with :passed, :failed, :total, :duration
+
+# If tests fail, read the output:
+read_test_output(lines=100)  # Last 100 lines
+read_test_output(lines=50, from_end=false)  # First 50 lines
 ```
+
+> **Why not `Pkg.test()`?** The test suite produces ~55KB of output which overwhelms the MCP REPL's output buffer and causes it to freeze. The test runner captures output to `tmp/test_output.log` and returns a summary.
 
 **Database Migrations:**
 ```julia
