@@ -77,6 +77,15 @@ h1, h2, h3, h4, h5, h6 {
 .logo {
     font-weight: 700;
     font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-img {
+    height: 28px;
+    width: auto;
+    vertical-align: middle;
 }
 
 /* ========================================
@@ -235,6 +244,19 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
     font-size: 0.875rem;
     margin-top: 40px;
+}
+
+.footer-copyright {
+    opacity: 0.9;
+}
+
+.footer-copyright a {
+    color: var(--qci-white);
+    text-decoration: underline;
+}
+
+.footer-copyright a:hover {
+    opacity: 0.8;
 }
 
 /* ========================================
