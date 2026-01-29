@@ -380,8 +380,9 @@ Add sorting and filtering to dashboard. Sortable columns: name, state, area, las
 ## Milestone 5: Admin Features
 
 ### Unit 5.1: Admin Authorization Middleware
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/admin-auth`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/30
 **Depends on:** 3.3
 
 **Task:**
