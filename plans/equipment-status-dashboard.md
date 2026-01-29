@@ -83,8 +83,8 @@ User → Vue App → JSON API → Controller → Model → SQLite
 - Main dashboard with sorting/filtering, tool detail, status update, history view
 
 ### Milestone 5: Admin Features
-- **Status:** Not Started
-- **Units:** 5.1, 5.2, 5.3
+- **Status:** In Progress
+- **Units:** 5.1 (Merged), 5.2 (Merged), 5.3 (Implemented)
 - Tool management, user management, admin authorization
 
 ### Milestone 6: UI Polish & Deployment

@@ -13,6 +13,10 @@ using Dates
 # Import models from parent App module
 import ..App: Tool, User
 using ..App.Tools: VALID_STATES, VALID_CRITICALITIES, validate_state, validate_criticality
+using ..App.Users: VALID_ROLES, validate_role, find_active_admins, find_by_username
+
+# Import auth core for password hashing
+using ..App: hash_password
 
 # Import auth helpers
 using ..App.AuthHelpers: current_user
@@ -26,6 +30,7 @@ include(joinpath(@__DIR__, "..", "lib", "dashboard_helpers.jl"))
 using .DashboardHelpers: state_css_class, state_display_text, format_timestamp
 
 export api_tools_index, api_tools_show, api_tools_create, api_tools_update, api_tools_toggle_active
+export api_users_index, api_users_show, api_users_create, api_users_update, api_users_reset_password, api_users_toggle_active
 
 """
     get_user_name(user_id::SearchLight.DbId) -> String
@@ -393,6 +398,462 @@ function api_tools_toggle_active()
     api_success(Dict(
         "tool" => tool_to_dict(tool),
         "message" => tool.is_active ? "Tool activated" : "Tool deactivated"
+    ))
+end
+
+# ============================================================================
+# User Management API Endpoints
+# ============================================================================
+
+"""
+    user_to_dict(user::User) -> Dict
+
+Convert a User to a dictionary for JSON response.
+Excludes password_hash for security.
+"""
+function user_to_dict(user::User)::Dict
+    Dict(
+        "id" => user.id.value,
+        "username" => user.username,
+        "name" => user.name,
+        "role" => user.role,
+        "is_active" => user.is_active,
+        "last_login_at" => user.last_login_at,
+        "last_login_at_formatted" => format_timestamp(user.last_login_at),
+        "created_at" => user.created_at,
+        "created_at_formatted" => format_timestamp(user.created_at),
+        "updated_at" => user.updated_at,
+        "updated_at_formatted" => format_timestamp(user.updated_at)
+    )
+end
+
+"""
+    api_users_index()
+
+JSON API endpoint for listing all users (including inactive).
+GET /api/admin/users
+
+Returns JSON array of all user objects with metadata.
+"""
+function api_users_index()
+    # Get all users (including inactive)
+    all_users = SearchLight.all(User)
+
+    # Sort by name for consistent ordering
+    sort!(all_users, by = u -> lowercase(u.name))
+
+    # Count stats
+    active_count = count(u -> u.is_active, all_users)
+    inactive_count = length(all_users) - active_count
+    admin_count = count(u -> u.role == "admin" && u.is_active, all_users)
+    operator_count = count(u -> u.role == "operator" && u.is_active, all_users)
+
+    # Prepare user data for JSON response
+    user_data = [user_to_dict(u) for u in all_users]
+
+    api_success(Dict(
+        "users" => user_data,
+        "meta" => Dict(
+            "total" => length(all_users),
+            "active" => active_count,
+            "inactive" => inactive_count,
+            "admins" => admin_count,
+            "operators" => operator_count,
+            "roles" => VALID_ROLES
+        )
+    ))
+end
+
+"""
+    api_users_show()
+
+JSON API endpoint for fetching a single user's details.
+GET /api/admin/users/:id
+
+Returns JSON object with full user details (excluding password).
+Returns 404 if user not found.
+"""
+function api_users_show()
+    # Get the user ID from the route parameters
+    params = Genie.Router.params()
+    id_str = get(params, :id, "")
+
+    # Validate ID parameter
+    local id::Int
+    try
+        id = parse(Int, string(id_str))
+    catch
+        return api_bad_request("Invalid user ID")
+    end
+
+    # Find the user
+    user = SearchLight.findone(User; id = id)
+
+    if user === nothing
+        return api_not_found("User not found")
+    end
+
+    api_success(Dict("user" => user_to_dict(user)))
+end
+
+"""
+    api_users_create()
+
+JSON API endpoint for creating a new user.
+POST /api/admin/users
+
+Request body (JSON):
+- username: Required. Unique username (3-50 characters)
+- password: Required. Password (minimum 6 characters)
+- name: Required. Display name (1-100 characters)
+- role: Required. One of: admin, operator
+- is_active: Optional. Whether user is active (default: true)
+
+Returns created user JSON on success.
+Returns 400 with validation errors on invalid input.
+"""
+function api_users_create()
+    # Parse JSON request body
+    local payload::Dict
+    try
+        payload = jsonpayload()
+        if payload === nothing
+            return api_bad_request("Request body is required")
+        end
+    catch e
+        @error "Failed to parse JSON payload" exception=e
+        return api_bad_request("Invalid JSON payload")
+    end
+
+    # Extract and validate required fields
+    username = string(get(payload, "username", ""))
+    password = string(get(payload, "password", ""))
+    name = string(get(payload, "name", ""))
+    role = string(get(payload, "role", "operator"))
+
+    # Validate username
+    if isempty(username)
+        return api_bad_request("Username is required")
+    end
+    if length(username) < 3
+        return api_bad_request("Username must be at least 3 characters")
+    end
+    if length(username) > 50
+        return api_bad_request("Username must not exceed 50 characters")
+    end
+    # Check username format (alphanumeric and underscores only)
+    if !occursin(r"^[a-zA-Z0-9_]+$", username)
+        return api_bad_request("Username can only contain letters, numbers, and underscores")
+    end
+
+    # Check for duplicate username
+    existing_user = find_by_username(username)
+    if existing_user !== nothing
+        return api_bad_request("Username already exists")
+    end
+
+    # Validate password
+    if isempty(password)
+        return api_bad_request("Password is required")
+    end
+    if length(password) < 6
+        return api_bad_request("Password must be at least 6 characters")
+    end
+
+    # Validate name
+    if isempty(name)
+        return api_bad_request("Name is required")
+    end
+    if length(name) > 100
+        return api_bad_request("Name must not exceed 100 characters")
+    end
+
+    # Validate role
+    if !validate_role(role)
+        return api_bad_request("Invalid role. Must be one of: $(join(VALID_ROLES, ", "))")
+    end
+
+    # Extract optional fields
+    is_active = get(payload, "is_active", true)
+    if !(is_active isa Bool)
+        is_active = string(is_active) == "true"
+    end
+
+    # Create new user
+    timestamp = Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
+    user = User(
+        username = username,
+        password_hash = hash_password(password),
+        name = name,
+        role = role,
+        is_active = is_active,
+        last_login_at = "",
+        created_at = timestamp,
+        updated_at = timestamp
+    )
+
+    # Save user
+    try
+        SearchLight.save!(user)
+        @info "User created" user_id=user.id.value username=username role=role
+    catch e
+        @error "Failed to create user" exception=e
+        return api_error("Failed to create user")
+    end
+
+    api_success(Dict("user" => user_to_dict(user)), status=201)
+end
+
+"""
+    api_users_update()
+
+JSON API endpoint for updating an existing user (excluding password).
+PUT /api/admin/users/:id
+
+Request body (JSON):
+- username: Optional. Unique username (3-50 characters)
+- name: Optional. Display name (1-100 characters)
+- role: Optional. One of: admin, operator
+
+Note: Use api_users_reset_password to change password.
+Note: Use api_users_toggle_active to change is_active status.
+
+Returns updated user JSON on success.
+Returns 400 with validation errors on invalid input.
+Returns 404 if user not found.
+"""
+function api_users_update()
+    # Get the user ID from the route parameters
+    params = Genie.Router.params()
+    id_str = get(params, :id, "")
+
+    # Validate ID parameter
+    local id::Int
+    try
+        id = parse(Int, string(id_str))
+    catch
+        return api_bad_request("Invalid user ID")
+    end
+
+    # Find the user
+    user = SearchLight.findone(User; id = id)
+
+    if user === nothing
+        return api_not_found("User not found")
+    end
+
+    # Parse JSON request body
+    local payload::Dict
+    try
+        payload = jsonpayload()
+        if payload === nothing
+            return api_bad_request("Request body is required")
+        end
+    catch e
+        @error "Failed to parse JSON payload" exception=e
+        return api_bad_request("Invalid JSON payload")
+    end
+
+    # Update username if provided
+    if haskey(payload, "username")
+        username = string(payload["username"])
+        if isempty(username)
+            return api_bad_request("Username cannot be empty")
+        end
+        if length(username) < 3
+            return api_bad_request("Username must be at least 3 characters")
+        end
+        if length(username) > 50
+            return api_bad_request("Username must not exceed 50 characters")
+        end
+        if !occursin(r"^[a-zA-Z0-9_]+$", username)
+            return api_bad_request("Username can only contain letters, numbers, and underscores")
+        end
+        # Check for duplicate username (excluding current user)
+        if username != user.username
+            existing_user = find_by_username(username)
+            if existing_user !== nothing
+                return api_bad_request("Username already exists")
+            end
+        end
+        user.username = username
+    end
+
+    # Update name if provided
+    if haskey(payload, "name")
+        name = string(payload["name"])
+        if isempty(name)
+            return api_bad_request("Name cannot be empty")
+        end
+        if length(name) > 100
+            return api_bad_request("Name must not exceed 100 characters")
+        end
+        user.name = name
+    end
+
+    # Update role if provided
+    if haskey(payload, "role")
+        role = string(payload["role"])
+        if !validate_role(role)
+            return api_bad_request("Invalid role. Must be one of: $(join(VALID_ROLES, ", "))")
+        end
+        # Prevent demoting the last admin
+        if user.role == "admin" && role != "admin" && user.is_active
+            active_admins = find_active_admins()
+            if length(active_admins) <= 1
+                return api_bad_request("Cannot change role of the last active admin")
+            end
+        end
+        user.role = role
+    end
+
+    # Update timestamp
+    user.updated_at = Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
+
+    # Save user
+    try
+        SearchLight.save!(user)
+        @info "User updated" user_id=user.id.value username=user.username
+    catch e
+        @error "Failed to update user" exception=e
+        return api_error("Failed to update user")
+    end
+
+    api_success(Dict("user" => user_to_dict(user)))
+end
+
+"""
+    api_users_reset_password()
+
+JSON API endpoint for resetting a user's password.
+POST /api/admin/users/:id/reset-password
+
+Request body (JSON):
+- password: Required. New password (minimum 6 characters)
+
+Returns updated user JSON on success.
+Returns 400 with validation errors on invalid input.
+Returns 404 if user not found.
+"""
+function api_users_reset_password()
+    # Get the user ID from the route parameters
+    params = Genie.Router.params()
+    id_str = get(params, :id, "")
+
+    # Validate ID parameter
+    local id::Int
+    try
+        id = parse(Int, string(id_str))
+    catch
+        return api_bad_request("Invalid user ID")
+    end
+
+    # Find the user
+    user = SearchLight.findone(User; id = id)
+
+    if user === nothing
+        return api_not_found("User not found")
+    end
+
+    # Parse JSON request body
+    local payload::Dict
+    try
+        payload = jsonpayload()
+        if payload === nothing
+            return api_bad_request("Request body is required")
+        end
+    catch e
+        @error "Failed to parse JSON payload" exception=e
+        return api_bad_request("Invalid JSON payload")
+    end
+
+    # Validate password
+    password = string(get(payload, "password", ""))
+    if isempty(password)
+        return api_bad_request("Password is required")
+    end
+    if length(password) < 6
+        return api_bad_request("Password must be at least 6 characters")
+    end
+
+    # Update password hash and timestamp
+    user.password_hash = hash_password(password)
+    user.updated_at = Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
+
+    # Save user
+    try
+        SearchLight.save!(user)
+        @info "User password reset" user_id=user.id.value username=user.username
+    catch e
+        @error "Failed to reset user password" exception=e
+        return api_error("Failed to reset user password")
+    end
+
+    api_success(Dict(
+        "user" => user_to_dict(user),
+        "message" => "Password reset successfully"
+    ))
+end
+
+"""
+    api_users_toggle_active()
+
+JSON API endpoint for toggling user active status.
+POST /api/admin/users/:id/toggle-active
+
+Toggles the is_active flag on the user (soft delete/restore).
+Cannot deactivate the last active admin.
+
+Returns updated user JSON on success.
+Returns 400 if attempting to deactivate last admin.
+Returns 404 if user not found.
+"""
+function api_users_toggle_active()
+    # Get the user ID from the route parameters
+    params = Genie.Router.params()
+    id_str = get(params, :id, "")
+
+    # Validate ID parameter
+    local id::Int
+    try
+        id = parse(Int, string(id_str))
+    catch
+        return api_bad_request("Invalid user ID")
+    end
+
+    # Find the user
+    user = SearchLight.findone(User; id = id)
+
+    if user === nothing
+        return api_not_found("User not found")
+    end
+
+    # Prevent deactivating the last active admin
+    if user.is_active && user.role == "admin"
+        active_admins = find_active_admins()
+        if length(active_admins) <= 1
+            return api_bad_request("Cannot deactivate the last active admin")
+        end
+    end
+
+    # Toggle is_active
+    old_status = user.is_active
+    user.is_active = !user.is_active
+    user.updated_at = Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
+
+    # Save user
+    try
+        SearchLight.save!(user)
+        action = user.is_active ? "activated" : "deactivated"
+        @info "User $action" user_id=user.id.value username=user.username was_active=old_status is_active=user.is_active
+    catch e
+        @error "Failed to toggle user active status" exception=e
+        return api_error("Failed to toggle user active status")
+    end
+
+    api_success(Dict(
+        "user" => user_to_dict(user),
+        "message" => user.is_active ? "User activated" : "User deactivated"
     ))
 end
 

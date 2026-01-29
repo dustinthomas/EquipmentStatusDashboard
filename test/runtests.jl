@@ -2247,4 +2247,198 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             @test occursin("\"updated_at\"", controller_content)
         end
     end
+
+    @testset "Admin User Management (Unit 5.3)" begin
+        @testset "AdminController user functions exist" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            @test isfile(controller_file)
+
+            controller_content = read(controller_file, String)
+
+            # Verify required user management functions are defined
+            @test occursin("function api_users_index", controller_content)
+            @test occursin("function api_users_show", controller_content)
+            @test occursin("function api_users_create", controller_content)
+            @test occursin("function api_users_update", controller_content)
+            @test occursin("function api_users_reset_password", controller_content)
+            @test occursin("function api_users_toggle_active", controller_content)
+
+            # Verify exports
+            @test occursin("api_users_index", controller_content)
+            @test occursin("api_users_show", controller_content)
+            @test occursin("api_users_create", controller_content)
+            @test occursin("api_users_update", controller_content)
+            @test occursin("api_users_reset_password", controller_content)
+            @test occursin("api_users_toggle_active", controller_content)
+        end
+
+        @testset "AdminController uses User model" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify User model imports
+            @test occursin("User", controller_content)
+            @test occursin("VALID_ROLES", controller_content)
+            @test occursin("validate_role", controller_content)
+            @test occursin("find_active_admins", controller_content)
+            @test occursin("find_by_username", controller_content)
+
+            # Verify password hashing
+            @test occursin("hash_password", controller_content)
+        end
+
+        @testset "Admin user routes defined" begin
+            routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+            routes_content = read(routes_file, String)
+
+            # Verify all admin user routes are defined
+            @test occursin("/api/admin/users", routes_content)
+            @test occursin("api_users_index", routes_content)
+            @test occursin("api_users_show", routes_content)
+            @test occursin("api_users_create", routes_content)
+            @test occursin("api_users_update", routes_content)
+            @test occursin("api_users_reset_password", routes_content)
+            @test occursin("api_users_toggle_active", routes_content)
+            @test occursin("/reset-password", routes_content)
+            @test occursin("/toggle-active", routes_content)
+
+            # Verify admin middleware is applied to all routes
+            @test occursin("require_admin_api()", routes_content)
+        end
+
+        @testset "api_users_index returns all users" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify it fetches all users (including inactive)
+            @test occursin("SearchLight.all(User)", controller_content)
+
+            # Verify it returns metadata
+            @test occursin("\"total\"", controller_content)
+            @test occursin("\"active\"", controller_content)
+            @test occursin("\"inactive\"", controller_content)
+            @test occursin("\"admins\"", controller_content)
+            @test occursin("\"operators\"", controller_content)
+            @test occursin("\"roles\"", controller_content)
+        end
+
+        @testset "api_users_show returns single user" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify it looks up user by ID
+            @test occursin("SearchLight.findone(User; id = id)", controller_content)
+
+            # Verify 404 handling
+            @test occursin("User not found", controller_content)
+            @test occursin("api_not_found", controller_content)
+        end
+
+        @testset "api_users_create validates input" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify required field validation
+            @test occursin("Username is required", controller_content)
+            @test occursin("Password is required", controller_content)
+            @test occursin("Name is required", controller_content)
+
+            # Verify length validation
+            @test occursin("Username must be at least 3 characters", controller_content)
+            @test occursin("Username must not exceed 50 characters", controller_content)
+            @test occursin("Password must be at least 6 characters", controller_content)
+            @test occursin("Name must not exceed 100 characters", controller_content)
+
+            # Verify username format validation
+            @test occursin("Username can only contain letters, numbers, and underscores", controller_content)
+
+            # Verify duplicate username check
+            @test occursin("Username already exists", controller_content)
+
+            # Verify role validation
+            @test occursin("Invalid role", controller_content)
+
+            # Verify it creates user with hashed password
+            @test occursin("hash_password(password)", controller_content)
+            @test occursin("SearchLight.save!", controller_content)
+
+            # Verify 201 status for creation
+            @test occursin("status=201", controller_content)
+        end
+
+        @testset "api_users_update validates input" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify partial update support (optional fields)
+            @test occursin("haskey(payload, \"username\")", controller_content)
+            @test occursin("haskey(payload, \"name\")", controller_content)
+            @test occursin("haskey(payload, \"role\")", controller_content)
+
+            # Verify validation on update
+            @test occursin("Username cannot be empty", controller_content)
+            @test occursin("Name cannot be empty", controller_content)
+
+            # Verify last admin protection on role change
+            @test occursin("Cannot change role of the last active admin", controller_content)
+
+            # Verify updated_at is set
+            @test occursin("user.updated_at", controller_content)
+        end
+
+        @testset "api_users_reset_password validates input" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify password validation
+            @test occursin("Password is required", controller_content)
+            @test occursin("Password must be at least 6 characters", controller_content)
+
+            # Verify password is hashed
+            @test occursin("hash_password(password)", controller_content)
+
+            # Verify success message
+            @test occursin("Password reset successfully", controller_content)
+        end
+
+        @testset "api_users_toggle_active protects last admin" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify toggle logic
+            @test occursin("!user.is_active", controller_content)
+
+            # Verify last admin protection
+            @test occursin("Cannot deactivate the last active admin", controller_content)
+            @test occursin("find_active_admins()", controller_content)
+
+            # Verify response includes message
+            @test occursin("User activated", controller_content)
+            @test occursin("User deactivated", controller_content)
+
+            # Verify logging
+            @test occursin("@info", controller_content)
+        end
+
+        @testset "User data structure in responses" begin
+            controller_file = joinpath(@__DIR__, "..", "src", "controllers", "AdminController.jl")
+            controller_content = read(controller_file, String)
+
+            # Verify user_to_dict helper function
+            @test occursin("function user_to_dict", controller_content)
+
+            # Verify all required fields are in response (excluding password_hash)
+            @test occursin("\"id\"", controller_content)
+            @test occursin("\"username\"", controller_content)
+            @test occursin("\"name\"", controller_content)
+            @test occursin("\"role\"", controller_content)
+            @test occursin("\"is_active\"", controller_content)
+            @test occursin("\"last_login_at\"", controller_content)
+            @test occursin("\"created_at\"", controller_content)
+            @test occursin("\"updated_at\"", controller_content)
+
+            # Verify password_hash is NOT exposed
+            @test !occursin("\"password_hash\"", controller_content)
+        end
+    end
 end
