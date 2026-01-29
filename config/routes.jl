@@ -249,9 +249,60 @@ route("/api/admin/users", method = GET) do
     if admin_result !== nothing
         return admin_result
     end
-    # Placeholder - will be implemented in Unit 5.3
-    json(Dict(
-        "message" => "Admin users endpoint. Full implementation in Unit 5.3.",
-        "users" => []
-    ))
+    AdminController.api_users_index()
+end
+
+# API: Admin - Get single user details
+# GET /api/admin/users/:id
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/users/:id::Int", method = GET) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    AdminController.api_users_show()
+end
+
+# API: Admin - Create new user
+# POST /api/admin/users
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/users", method = POST) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    AdminController.api_users_create()
+end
+
+# API: Admin - Update user
+# PUT /api/admin/users/:id
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/users/:id::Int", method = PUT) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    AdminController.api_users_update()
+end
+
+# API: Admin - Reset user password
+# POST /api/admin/users/:id/reset-password
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/users/:id::Int/reset-password", method = POST) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    AdminController.api_users_reset_password()
+end
+
+# API: Admin - Toggle user active status (soft delete/restore)
+# POST /api/admin/users/:id/toggle-active
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/users/:id::Int/toggle-active", method = POST) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    AdminController.api_users_toggle_active()
 end

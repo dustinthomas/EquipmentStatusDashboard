@@ -436,29 +436,31 @@ Admin API endpoints to create, edit, and deactivate tools. List all tools (inclu
 ---
 
 ### Unit 5.3: User Management (Admin)
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/admin-users`
 **Depends on:** 5.1, 2.1
 
 **Task:**
-Admin pages to create, edit, and deactivate users. Include password reset functionality.
+Admin API endpoints to create, edit, and deactivate users. Include password reset functionality.
+
+**Note:** Per project decision (see Units 4.3-4.5), admin features are implemented as JSON APIs for the Vue frontend instead of server-rendered HTML pages.
 
 **Acceptance Criteria:**
-- [ ] `GET /admin/users` lists all users
-- [ ] `GET /admin/users/new` shows create form
-- [ ] `POST /admin/users` creates new user with hashed password
-- [ ] `GET /admin/users/:id/edit` shows edit form
-- [ ] `POST /admin/users/:id` updates user (not password)
-- [ ] `POST /admin/users/:id/reset-password` resets password
-- [ ] Can toggle is_active
-- [ ] Cannot deactivate last admin
+- [x] `GET /api/admin/users` lists all users (including inactive)
+- [x] `GET /api/admin/users/:id` shows single user details
+- [x] `POST /api/admin/users` creates new user with hashed password
+- [x] `PUT /api/admin/users/:id` updates user (not password)
+- [x] `POST /api/admin/users/:id/reset-password` resets password
+- [x] `POST /api/admin/users/:id/toggle-active` toggles is_active (soft delete)
+- [x] Cannot deactivate last admin
+- [x] Cannot change role of last admin
+- [x] Validation errors returned as JSON with 400 status
+- [x] All routes protected with admin middleware (403 for non-admins)
 
-**Files to create/modify:**
-- `src/controllers/AdminController.jl` - User management handlers
-- `src/views/admin/users/index.jl.html` - User list
-- `src/views/admin/users/new.jl.html` - Create form
-- `src/views/admin/users/edit.jl.html` - Edit form
-- `config/routes.jl` - Add admin user routes
+**Files created/modified:**
+- `src/controllers/AdminController.jl` - User management API handlers
+- `config/routes.jl` - Add admin user API routes
+- `test/runtests.jl` - Add tests for admin user management
 
 ---
 
