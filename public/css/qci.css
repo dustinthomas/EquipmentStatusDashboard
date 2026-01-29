@@ -692,10 +692,10 @@ textarea.form-control {
 }
 
 /* Status option colors in select (limited browser support) */
-.status-up { color: #2ecc71; }
-.status-up-with-issues { color: #f39c12; }
-.status-maintenance { color: #e67e22; }
-.status-down { color: #e74c3c; }
+select option.status-up { color: #2ecc71; }
+select option.status-up-with-issues { color: #f39c12; }
+select option.status-maintenance { color: #e67e22; }
+select option.status-down { color: #e74c3c; }
 
 /* ========================================
    Tool History View Styles
