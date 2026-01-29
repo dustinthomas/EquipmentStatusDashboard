@@ -1018,7 +1018,10 @@ const app = createApp({
             <nav class="navbar">
                 <div class="container">
                     <div class="navbar-content">
-                        <a href="/vue" class="logo" @click.prevent="navigateToDashboard">QCI Equipment Status</a>
+                        <a href="/vue" class="logo" @click.prevent="navigateToDashboard">
+                            <img src="/img/qci-logo.svg" alt="QCI" class="logo-img">
+                            <span>Equipment Status</span>
+                        </a>
                         <div class="nav-links">
                             <template v-if="auth.isAuthenticated">
                                 <a href="/vue" class="nav-link" @click.prevent="navigateToDashboard">Dashboard</a>
@@ -1665,7 +1668,7 @@ const app = createApp({
             <!-- Footer -->
             <footer class="footer">
                 <div class="container">
-                    QCI Equipment Status Dashboard
+                    <p class="footer-copyright">&copy; {{ new Date().getFullYear() }} QCI. All rights reserved.</p>
                 </div>
             </footer>
         </div>

@@ -468,24 +468,33 @@ Admin API endpoints to create, edit, and deactivate users. Include password rese
 ## Milestone 6: UI Polish & Deployment
 
 ### Unit 6.1: QCI Branding CSS
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/qci-css`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/33
 **Depends on:** 4.1
 
 **Task:**
 Complete CSS styling with QCI branding. Navy headers, status colors, Raleway font, card layouts, responsive basics.
 
 **Acceptance Criteria:**
-- [ ] Nav bar uses QCI dark navy (#1E204B)
-- [ ] Raleway font applied throughout
-- [ ] Status colors match spec (green/yellow/orange/red)
-- [ ] Dashboard uses white cards with subtle shadow
-- [ ] Footer styled with QCI copyright
-- [ ] Forms and buttons styled consistently
+- [x] Nav bar uses QCI dark navy (#1E204B)
+- [x] Raleway font applied throughout
+- [x] Status colors match spec (green/yellow/orange/red)
+- [x] Dashboard uses white cards with subtle shadow
+- [x] Footer styled with QCI copyright
+- [x] Forms and buttons styled consistently
 
-**Files to create/modify:**
-- `public/css/qci.css` - Complete QCI styles
-- `public/img/qci-logo.png` - QCI logo placeholder
+**Implementation Notes:**
+- QCI logo added as SVG (`public/img/qci-logo.svg`)
+- Logo displayed in navbar alongside "Equipment Status" text
+- Footer updated to show dynamic copyright year
+- Favicon link added to index.html
+
+**Files created/modified:**
+- `public/css/qci-theme.css` - Added footer copyright styles, logo styles
+- `public/img/qci-logo.svg` - QCI logo placeholder (SVG)
+- `public/js/app.js` - Updated navbar logo and footer copyright
+- `public/index.html` - Updated loading state with logo, added favicon link
 
 ---
 
