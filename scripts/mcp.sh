@@ -1,16 +1,17 @@
 #!/bin/bash
-# MCP REPL Pane Manager for WezTerm
+# MCP REPL Manager
 # Cross-platform: works on Linux, macOS, and Windows (Git Bash/MSYS2)
+#
+# The MCP REPL runs in a separate terminal window and communicates via HTTP.
+# Any Claude session can connect to it as long as it's running on port 3000.
 #
 # Usage: ./scripts/mcp.sh <command>
 #
 # Commands:
-#   status   - Check if pane exists and if MCP REPL is running
-#   open     - Open a vertical pane (if one doesn't exist)
-#   start    - Start the MCP REPL (opens pane if needed)
-#   stop     - Stop the MCP REPL session
+#   status   - Check if MCP REPL is running
+#   start    - Start the MCP REPL in a new terminal window
+#   stop     - Stop the MCP REPL
 #   restart  - Restart the MCP REPL
-#   close    - Close the MCP pane entirely
 #
 # Exit codes:
 #   0 - Success
@@ -38,9 +39,13 @@ OS_TYPE=$(detect_os)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Convert to Windows path if needed (for cmd.exe)
+if [ "$OS_TYPE" = "windows" ]; then
+    PROJECT_DIR_WIN=$(cygpath -w "$PROJECT_DIR" 2>/dev/null || echo "$PROJECT_DIR")
+fi
+
 JULIA_CMD="julia --project=. -i scripts/start_mcp_repl.jl"
 MCP_PORT=3000
-PANE_WIDTH_PERCENT=40
 
 # Colors for output
 RED='\033[0;31m'
@@ -69,48 +74,6 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
-# Check for required dependencies
-check_dependencies() {
-    local missing=()
-
-    if ! command -v wezterm &> /dev/null; then
-        missing+=("wezterm")
-    fi
-
-    if ! command -v jq &> /dev/null; then
-        missing+=("jq")
-    fi
-
-    if [ ${#missing[@]} -gt 0 ]; then
-        log_error "Missing required dependencies: ${missing[*]}"
-        echo ""
-        echo "Installation instructions:"
-        for dep in "${missing[@]}"; do
-            case "$dep" in
-                jq)
-                    case "$OS_TYPE" in
-                        windows)
-                            echo "  jq: winget install jqlang.jq"
-                            echo "      or: pacman -S jq (MSYS2)"
-                            ;;
-                        macos)
-                            echo "  jq: brew install jq"
-                            ;;
-                        linux)
-                            echo "  jq: sudo apt install jq (Debian/Ubuntu)"
-                            echo "      or: sudo dnf install jq (Fedora)"
-                            ;;
-                    esac
-                    ;;
-                wezterm)
-                    echo "  wezterm: https://wezfurlong.org/wezterm/installation.html"
-                    ;;
-            esac
-        done
-        exit 1
-    fi
-}
-
 # Check if MCP server is listening on the port (cross-platform)
 is_mcp_running() {
     case "$OS_TYPE" in
@@ -137,100 +100,6 @@ get_mcp_pid() {
     esac
 }
 
-# Get the current pane ID (where Claude Code is running)
-get_current_pane() {
-    # WezTerm sets WEZTERM_PANE environment variable
-    if [ -n "$WEZTERM_PANE" ]; then
-        echo "$WEZTERM_PANE"
-        return
-    fi
-
-    # Fallback: find the active pane with "Claude" in the title
-    local claude_pane
-    claude_pane=$(wezterm cli list --format json 2>/dev/null | \
-        jq -r '[.[] | select(.is_active == true and (.title | test("Claude"; "i")))] | .[0].pane_id // empty' 2>/dev/null)
-
-    if [ -n "$claude_pane" ]; then
-        echo "$claude_pane"
-        return
-    fi
-
-    # Last fallback: first active pane
-    local active_pane
-    active_pane=$(wezterm cli list --format json 2>/dev/null | \
-        jq -r '[.[] | select(.is_active == true)] | .[0].pane_id // "0"' 2>/dev/null)
-
-    echo "${active_pane:-0}"
-}
-
-# Get the tab ID for a given pane
-get_tab_for_pane() {
-    local pane_id=$1
-    wezterm cli list --format json 2>/dev/null | \
-        jq -r ".[] | select(.pane_id == $pane_id) | .tab_id" 2>/dev/null
-}
-
-# Find existing MCP pane (pane to the right of current, or with julia/mcp in title)
-find_mcp_pane() {
-    local current_pane=$1
-    local current_tab
-    current_tab=$(get_tab_for_pane "$current_pane")
-
-    # Strategy 1: Look for pane with "julia" or "mcp" in title within same tab
-    local julia_pane
-    julia_pane=$(wezterm cli list --format json 2>/dev/null | \
-        jq -r "[.[] | select(.tab_id == $current_tab and .pane_id != $current_pane and ((.title | test(\"julia|mcp\"; \"i\")) or (.title | test(\"start_mcp\"; \"i\"))))] | .[0].pane_id // empty" 2>/dev/null)
-
-    if [ -n "$julia_pane" ]; then
-        echo "$julia_pane"
-        return 0
-    fi
-
-    # Strategy 2: Look for pane to the right
-    local right_pane
-    right_pane=$(wezterm cli get-pane-direction --pane-id "$current_pane" Right 2>/dev/null)
-
-    if [ -n "$right_pane" ]; then
-        echo "$right_pane"
-        return 0
-    fi
-
-    # No pane found
-    return 1
-}
-
-# Create a new pane to the right
-create_right_pane() {
-    local current_pane=$1
-
-    log_info "Creating new pane to the right..."
-    local new_pane
-    new_pane=$(wezterm cli split-pane --pane-id "$current_pane" --right --percent "$PANE_WIDTH_PERCENT" --cwd "$PROJECT_DIR" 2>/dev/null)
-
-    if [ -n "$new_pane" ]; then
-        echo "$new_pane"
-        # Activate the original Claude pane
-        sleep 0.5
-        wezterm cli activate-pane --pane-id "$current_pane" 2>/dev/null || true
-        return 0
-    fi
-
-    log_error "Failed to create pane"
-    return 1
-}
-
-# Check if a pane appears to have Julia/MCP running (by checking pane text)
-pane_has_julia() {
-    local pane_id=$1
-    local pane_text
-    pane_text=$(wezterm cli get-text --pane-id "$pane_id" 2>/dev/null | head -50)
-
-    if echo "$pane_text" | grep -qiE "(julia>|MCP REPL|MCPRepl|localhost:$MCP_PORT)"; then
-        return 0
-    fi
-    return 1
-}
-
 # Kill process by PID (cross-platform)
 kill_process() {
     local pid=$1
@@ -244,6 +113,43 @@ kill_process() {
     esac
 }
 
+# Open a new terminal window with the given command
+open_terminal() {
+    local title="$1"
+    local working_dir="$2"
+    local command="$3"
+
+    case "$OS_TYPE" in
+        windows)
+            # Use PowerShell to start Julia in a new window
+            powershell.exe -NoProfile -Command "Start-Process -FilePath 'julia' -ArgumentList '--project=.', '-i', 'scripts/start_mcp_repl.jl' -WorkingDirectory '$PROJECT_DIR_WIN'"
+            ;;
+        macos)
+            if command -v wezterm &> /dev/null; then
+                wezterm start --cwd "$working_dir" -- bash -c "$command; exec bash"
+            else
+                osascript -e "tell app \"Terminal\" to do script \"cd '$working_dir' && $command\""
+            fi
+            ;;
+        linux)
+            if command -v wezterm &> /dev/null; then
+                wezterm start --cwd "$working_dir" -- bash -c "$command; exec bash"
+            elif command -v gnome-terminal &> /dev/null; then
+                gnome-terminal --working-directory="$working_dir" -- bash -c "$command; exec bash"
+            elif command -v xterm &> /dev/null; then
+                xterm -e "cd '$working_dir' && $command; exec bash" &
+            else
+                log_error "No supported terminal emulator found"
+                return 1
+            fi
+            ;;
+        *)
+            log_error "Unsupported platform: $OS_TYPE"
+            return 1
+            ;;
+    esac
+}
+
 # ============================================================================
 # Command Implementations
 # ============================================================================
@@ -253,85 +159,47 @@ cmd_status() {
     echo ""
     echo "Platform: $OS_TYPE"
     echo "Project:  $PROJECT_DIR"
+    echo "Port:     $MCP_PORT"
     echo ""
 
-    local current_pane
-    current_pane=$(get_current_pane)
-    local current_tab
-    current_tab=$(get_tab_for_pane "$current_pane")
-
-    echo "Current pane: $current_pane (tab: $current_tab)"
-
-    # Check for MCP pane
-    local mcp_pane
-    if mcp_pane=$(find_mcp_pane "$current_pane"); then
-        log_success "MCP pane found: $mcp_pane"
-
-        # Check if Julia is running in that pane
-        if pane_has_julia "$mcp_pane"; then
-            log_success "Julia session detected in pane"
-        else
-            log_warn "No Julia session detected in pane"
-        fi
-    else
-        log_warn "No MCP pane found (no split pane to the right)"
-    fi
-
-    # Check if MCP server is listening
     if is_mcp_running; then
         local pid
         pid=$(get_mcp_pid)
         log_success "MCP server is RUNNING on port $MCP_PORT (PID: $pid)"
+        echo ""
+        echo "Any Claude session can connect to this REPL via MCP tools."
     else
         log_warn "MCP server is NOT running on port $MCP_PORT"
+        echo ""
+        echo "Run './scripts/mcp.sh start' to start the REPL in a new terminal."
     fi
-}
-
-cmd_open() {
-    local current_pane
-    current_pane=$(get_current_pane)
-
-    log_info "Checking for existing MCP pane..."
-
-    local mcp_pane
-    if mcp_pane=$(find_mcp_pane "$current_pane"); then
-        log_success "Pane already exists: $mcp_pane"
-        echo "PANE_ID=$mcp_pane"
-        exit 2
-    fi
-
-    mcp_pane=$(create_right_pane "$current_pane")
-    log_success "Created new pane: $mcp_pane"
-    echo "PANE_ID=$mcp_pane"
 }
 
 cmd_start() {
-    local current_pane
-    current_pane=$(get_current_pane)
-
     # Check if already running
     if is_mcp_running; then
         local pid
         pid=$(get_mcp_pid)
         log_warn "MCP server is already running on port $MCP_PORT (PID: $pid)"
-        echo "Use 'mcp.sh restart' to restart the server."
+        echo "Use './scripts/mcp.sh restart' to restart the server."
         exit 2
     fi
 
-    # Find or create pane
-    local mcp_pane
-    if ! mcp_pane=$(find_mcp_pane "$current_pane"); then
-        mcp_pane=$(create_right_pane "$current_pane")
+    log_info "Starting MCP REPL in a new terminal window..."
+
+    # Try to open terminal
+    local open_success=true
+    open_terminal "Julia MCP REPL" "$PROJECT_DIR" "$JULIA_CMD" || open_success=false
+
+    if [ "$open_success" = "false" ]; then
+        log_warn "Could not auto-start terminal. Please start manually:"
+        echo ""
+        echo "  Open a new terminal and run:"
+        echo "    cd $PROJECT_DIR"
+        echo "    $JULIA_CMD"
+        echo ""
+        return 1
     fi
-
-    log_info "Starting MCP REPL in pane $mcp_pane..."
-
-    # Clear and start Julia
-    wezterm cli send-text --pane-id "$mcp_pane" --no-paste $'clear\r'
-    sleep 0.5
-    wezterm cli send-text --pane-id "$mcp_pane" --no-paste "cd \"$PROJECT_DIR\""$'\r'
-    sleep 0.5
-    wezterm cli send-text --pane-id "$mcp_pane" --no-paste "$JULIA_CMD"$'\r'
 
     log_info "Julia starting... (takes ~15-20 seconds)"
 
@@ -343,6 +211,8 @@ cmd_start() {
         sleep 1
         if is_mcp_running; then
             log_success "MCP server is running on port $MCP_PORT"
+            echo ""
+            echo "The REPL is ready. Any Claude session can now use MCP tools."
             return 0
         fi
         attempts=$((attempts + 1))
@@ -351,42 +221,32 @@ cmd_start() {
         fi
     done
 
-    log_warn "Timeout waiting for MCP server. Check pane $mcp_pane for errors."
+    log_warn "Auto-start timed out. Please start manually in a new terminal:"
+    echo ""
+    echo "    cd $PROJECT_DIR_WIN"
+    echo "    $JULIA_CMD"
+    echo ""
+    echo "Then run './scripts/mcp.sh status' to verify."
     return 1
 }
 
 cmd_stop() {
-    local current_pane
-    current_pane=$(get_current_pane)
-
     if ! is_mcp_running; then
         log_warn "MCP server is not running"
         exit 2
     fi
 
-    # Find the MCP pane
-    local mcp_pane
-    if mcp_pane=$(find_mcp_pane "$current_pane"); then
-        log_info "Stopping Julia session in pane $mcp_pane..."
+    local pid
+    pid=$(get_mcp_pid)
+    log_info "Stopping MCP server (PID: $pid)..."
 
-        # Send Ctrl+C then exit()
-        wezterm cli send-text --pane-id "$mcp_pane" --no-paste $'\x03'
-        sleep 1
-        wezterm cli send-text --pane-id "$mcp_pane" --no-paste $'exit()\r'
-        sleep 2
-    fi
-
-    # Force kill if still running
-    if is_mcp_running; then
-        local pid
-        pid=$(get_mcp_pid)
-        log_info "Force killing process $pid..."
-        kill_process "$pid"
-        sleep 1
-    fi
+    kill_process "$pid"
+    sleep 2
 
     if ! is_mcp_running; then
         log_success "MCP server stopped"
+        echo ""
+        echo "Note: The terminal window may still be open. You can close it manually."
     else
         log_error "Failed to stop MCP server"
         return 1
@@ -399,34 +259,11 @@ cmd_restart() {
     # Stop if running
     if is_mcp_running; then
         cmd_stop
+        sleep 1
     fi
 
     # Start fresh
     cmd_start
-}
-
-cmd_close() {
-    local current_pane
-    current_pane=$(get_current_pane)
-
-    # Find the MCP pane
-    local mcp_pane
-    if ! mcp_pane=$(find_mcp_pane "$current_pane"); then
-        log_warn "No MCP pane found to close"
-        exit 2
-    fi
-
-    # Stop Julia if running
-    if is_mcp_running; then
-        log_info "Stopping MCP server first..."
-        cmd_stop
-    fi
-
-    # Close the pane
-    log_info "Closing pane $mcp_pane..."
-    wezterm cli kill-pane --pane-id "$mcp_pane" 2>/dev/null
-
-    log_success "Pane closed"
 }
 
 # ============================================================================
@@ -434,28 +271,24 @@ cmd_close() {
 # ============================================================================
 
 show_usage() {
-    echo "MCP REPL Pane Manager for WezTerm (Cross-platform)"
+    echo "MCP REPL Manager (Cross-platform)"
+    echo ""
+    echo "The MCP REPL runs in a separate terminal and communicates via HTTP."
+    echo "Any Claude session can connect to it on port $MCP_PORT."
     echo ""
     echo "Usage: $0 <command>"
     echo ""
     echo "Commands:"
-    echo "  status   Check if pane exists and if MCP REPL is running"
-    echo "  open     Open a vertical pane (if one doesn't exist)"
-    echo "  start    Start the MCP REPL (opens pane if needed)"
-    echo "  stop     Stop the MCP REPL session"
+    echo "  status   Check if MCP REPL is running"
+    echo "  start    Start the MCP REPL in a new terminal window"
+    echo "  stop     Stop the MCP REPL"
     echo "  restart  Restart the MCP REPL"
-    echo "  close    Close the MCP pane entirely"
     echo ""
     echo "Detected platform: $OS_TYPE"
 }
 
 main() {
     local command="${1:-}"
-
-    # Check dependencies for all commands except help
-    if [ -n "$command" ] && [ "$command" != "-h" ] && [ "$command" != "--help" ] && [ "$command" != "help" ]; then
-        check_dependencies
-    fi
 
     if [ -z "$command" ]; then
         show_usage
@@ -466,9 +299,6 @@ main() {
         status)
             cmd_status
             ;;
-        open)
-            cmd_open
-            ;;
         start)
             cmd_start
             ;;
@@ -477,9 +307,6 @@ main() {
             ;;
         restart)
             cmd_restart
-            ;;
-        close)
-            cmd_close
             ;;
         -h|--help|help)
             show_usage

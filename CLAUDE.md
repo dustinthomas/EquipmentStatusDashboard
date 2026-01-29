@@ -54,7 +54,7 @@ docker run -d -p 8000:8000 -v qci-data:/data qci-status:latest
 
 ## Julia MCP REPL (CRITICAL)
 
-A Julia REPL runs as an MCP server in a WezTerm side pane. **ALWAYS use the MCP REPL tools for Julia operations.**
+A Julia REPL runs as an MCP server in a **separate terminal window**, accessible by any Claude session via HTTP on port 3000. **ALWAYS use the MCP REPL tools for Julia operations.**
 
 > **Skills and Implementers:** You MUST use `mcp__julia-repl__exec_repl` for running Julia code, tests, and app operations. NEVER use `julia` commands in bash.
 
@@ -64,6 +64,7 @@ A Julia REPL runs as an MCP server in a WezTerm side pane. **ALWAYS use the MCP 
 2. **Project environment ready** - Already configured with `--project=.`
 3. **Revise.jl active** - Function changes auto-reload without restart
 4. **Persistent state** - Database connections, loaded modules persist
+5. **Session-independent** - Any Claude session can connect to the running REPL
 
 ### MCP REPL Tools
 
@@ -74,18 +75,18 @@ A Julia REPL runs as an MCP server in a WezTerm side pane. **ALWAYS use the MCP 
 | `mcp__julia-repl__remove-trailing-whitespace` | Clean up edited files |
 | `mcp__julia-repl__usage_instructions` | Get detailed REPL guidance |
 
-### Managing the MCP REPL Pane
+### Managing the MCP REPL
 
-Use `scripts/mcp.sh` to manage the REPL session in WezTerm:
+Use `scripts/mcp.sh` to manage the REPL. It runs in a separate terminal window that persists independently of Claude sessions:
 
 ```bash
-./scripts/mcp.sh status   # Check if pane exists and REPL is running
-./scripts/mcp.sh open     # Open a side pane (if not already open)
-./scripts/mcp.sh start    # Start the MCP REPL (opens pane if needed)
-./scripts/mcp.sh stop     # Stop the REPL session
+./scripts/mcp.sh status   # Check if MCP REPL is running
+./scripts/mcp.sh start    # Start the MCP REPL in a new terminal window
+./scripts/mcp.sh stop     # Stop the MCP REPL
 ./scripts/mcp.sh restart  # Restart the REPL (for struct changes)
-./scripts/mcp.sh close    # Close the pane entirely
 ```
+
+The REPL communicates via HTTP, so any Claude session can use it as long as it's running.
 
 ### Common Operations (via MCP REPL)
 
@@ -215,7 +216,7 @@ EquipmentStatusDashboard/
 │   └── server.bat         # Start server (Windows)
 │
 ├── scripts/               # Development scripts
-│   ├── mcp.sh             # MCP REPL pane manager (status/start/stop/restart/close)
+│   ├── mcp.sh             # MCP REPL manager (status/start/stop/restart)
 │   ├── restart_mcp.sh     # Wrapper for mcp.sh restart (backwards compat)
 │   └── start_mcp_repl.jl  # Julia script to start MCP server
 │
