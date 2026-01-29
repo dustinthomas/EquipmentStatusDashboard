@@ -468,7 +468,7 @@ Admin API endpoints to create, edit, and deactivate users. Include password rese
 ## Milestone 6: UI Polish & Deployment
 
 ### Unit 6.1: QCI Branding CSS
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/qci-css`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/33
 **Depends on:** 4.1
