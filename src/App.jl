@@ -291,6 +291,7 @@ end
 include("lib/auth_helpers.jl")
 include("controllers/AuthController.jl")
 include("controllers/DashboardController.jl")
+include("controllers/AdminController.jl")
 
 export load_app
 
