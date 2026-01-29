@@ -408,8 +408,9 @@ Add middleware to protect admin routes. Only users with role="admin" can access 
 ---
 
 ### Unit 5.2: Tool Management (Admin)
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/admin-tools`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/31
 **Depends on:** 5.1, 2.2
 
 **Task:**
