@@ -1983,4 +1983,87 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             @test occursin("clearFilters,", app_js_content)
         end
     end
+
+    @testset "Admin Authorization Middleware" begin
+        @testset "Routes configuration" begin
+            routes_file = joinpath(@__DIR__, "..", "config", "routes.jl")
+            @test isfile(routes_file)
+
+            routes_content = read(routes_file, String)
+
+            # Test admin HTML routes exist
+            @test occursin("/admin/tools", routes_content)
+            @test occursin("/admin/users", routes_content)
+
+            # Test admin API routes exist
+            @test occursin("/api/admin/tools", routes_content)
+            @test occursin("/api/admin/users", routes_content)
+
+            # Test admin middleware is applied
+            @test occursin("require_admin()", routes_content)
+            @test occursin("require_admin_api()", routes_content)
+        end
+
+        @testset "Auth helpers module" begin
+            auth_helpers_file = joinpath(@__DIR__, "..", "src", "lib", "auth_helpers.jl")
+            @test isfile(auth_helpers_file)
+
+            auth_helpers_content = read(auth_helpers_file, String)
+
+            # Test require_admin function exists
+            @test occursin("function require_admin()", auth_helpers_content)
+
+            # Test require_admin_api function exists
+            @test occursin("function require_admin_api()", auth_helpers_content)
+
+            # Test require_admin checks authentication first
+            @test occursin("require_authentication()", auth_helpers_content)
+
+            # Test require_admin_api checks authentication first
+            @test occursin("require_authentication_api()", auth_helpers_content)
+
+            # Test admin role check using App.is_admin
+            @test occursin("App.is_admin(session)", auth_helpers_content)
+
+            # Test redirect for non-admins (HTML routes)
+            @test occursin("redirect(\"/vue?error=forbidden\")", auth_helpers_content)
+
+            # Test api_forbidden for non-admins (API routes)
+            @test occursin("api_forbidden(\"Admin access required\")", auth_helpers_content)
+
+            # Test functions are exported
+            @test occursin("export", auth_helpers_content)
+            @test occursin("require_admin", auth_helpers_content)
+            @test occursin("require_admin_api", auth_helpers_content)
+        end
+
+        @testset "Vue app handles forbidden error" begin
+            app_js_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+            app_js_content = read(app_js_file, String)
+
+            # Test error parameter handling in URL
+            @test occursin("params.get('error')", app_js_content)
+            @test occursin("forbidden", app_js_content)
+
+            # Test user-friendly error message
+            @test occursin("You do not have permission", app_js_content)
+            @test occursin("Admin access required", app_js_content)
+
+            # Test error param is cleared from URL
+            @test occursin("params.delete('error')", app_js_content)
+        end
+
+        @testset "Admin link visibility in Vue" begin
+            app_js_file = joinpath(@__DIR__, "..", "public", "js", "app.js")
+            app_js_content = read(app_js_file, String)
+
+            # Test isAdmin computed property
+            @test occursin("const isAdmin = computed", app_js_content)
+            @test occursin("auth.user.role === 'admin'", app_js_content)
+
+            # Test Admin link only shown to admins
+            @test occursin("v-if=\"isAdmin\"", app_js_content)
+            @test occursin("href=\"/admin\"", app_js_content)
+        end
+    end
 end

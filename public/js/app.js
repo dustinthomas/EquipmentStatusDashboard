@@ -305,6 +305,16 @@ const app = createApp({
             // Read sort params (with defaults)
             sort.column = params.get('sort') || 'state';
             sort.direction = params.get('dir') || 'asc';
+
+            // Check for error parameter (e.g., from admin route redirect)
+            const errorParam = params.get('error');
+            if (errorParam === 'forbidden') {
+                dashboard.error = 'You do not have permission to access that page. Admin access required.';
+                // Clear the error param from URL without triggering a reload
+                params.delete('error');
+                const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+                window.history.replaceState({}, '', newUrl);
+            }
         }
 
         /**

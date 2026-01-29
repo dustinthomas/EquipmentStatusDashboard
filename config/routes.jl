@@ -126,3 +126,81 @@ route("/vue/*", method = GET) do
         :html
     )
 end
+
+# ========================================
+# Admin Routes
+# ========================================
+
+# Admin: Tools list
+# GET /admin/tools - List all tools (including inactive)
+# Protected: requires admin role (redirects to dashboard if not admin)
+route("/admin/tools", method = GET) do
+    admin_result = AuthHelpers.require_admin()
+    if admin_result !== nothing
+        return admin_result
+    end
+    # Placeholder - will be implemented in Unit 5.2
+    Genie.Renderer.respond(
+        """<!DOCTYPE html>
+        <html><head><title>Admin - Tools</title></head>
+        <body><h1>Admin: Tool Management</h1>
+        <p>This page is under construction. Tool management will be implemented in Unit 5.2.</p>
+        <p><a href="/vue">Return to Dashboard</a></p>
+        </body></html>""",
+        :html
+    )
+end
+
+# Admin: Users list
+# GET /admin/users - List all users
+# Protected: requires admin role (redirects to dashboard if not admin)
+route("/admin/users", method = GET) do
+    admin_result = AuthHelpers.require_admin()
+    if admin_result !== nothing
+        return admin_result
+    end
+    # Placeholder - will be implemented in Unit 5.3
+    Genie.Renderer.respond(
+        """<!DOCTYPE html>
+        <html><head><title>Admin - Users</title></head>
+        <body><h1>Admin: User Management</h1>
+        <p>This page is under construction. User management will be implemented in Unit 5.3.</p>
+        <p><a href="/vue">Return to Dashboard</a></p>
+        </body></html>""",
+        :html
+    )
+end
+
+# ========================================
+# Admin API Routes
+# ========================================
+
+# API: Admin - Get all tools (including inactive)
+# GET /api/admin/tools
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/tools", method = GET) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    # Placeholder - will be implemented in Unit 5.2
+    json(Dict(
+        "message" => "Admin tools endpoint. Full implementation in Unit 5.2.",
+        "tools" => []
+    ))
+end
+
+# API: Admin - Get all users
+# GET /api/admin/users
+# Protected: requires admin role (returns 403 if not admin)
+route("/api/admin/users", method = GET) do
+    admin_result = AuthHelpers.require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    # Placeholder - will be implemented in Unit 5.3
+    json(Dict(
+        "message" => "Admin users endpoint. Full implementation in Unit 5.3.",
+        "users" => []
+    ))
+end

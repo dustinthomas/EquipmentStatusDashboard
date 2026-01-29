@@ -7,7 +7,8 @@ Quick reference for navigating this codebase.
 | File | Purpose |
 |------|---------|
 | `app.jl` | Application entry point, starts Genie server |
-| `test/runtests.jl` | Test suite entry |
+| `test/runtests.jl` | Test suite (640 tests) |
+| `test/test_runner.jl` | MCP REPL test runner - use `run_tests()` to avoid REPL freeze |
 
 ## Key Modules
 

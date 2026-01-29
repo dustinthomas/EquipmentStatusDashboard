@@ -188,7 +188,7 @@ end
     require_admin() -> Union{Nothing, HTTP.Messages.Response}
 
 Check if the user is an admin. If not authenticated, redirect to login.
-If authenticated but not admin, return 403 forbidden.
+If authenticated but not admin, redirect to dashboard with 403 status.
 
 Returns nothing if admin, or a redirect/error response if not.
 
@@ -213,12 +213,50 @@ function require_admin()
     # Then check admin role
     session = get_session()
     if !App.is_admin(session)
-        @warn "Non-admin access attempt to admin route" path=get_current_path()
-        # Return 403 Forbidden - will be handled by error page in Unit 5.1
-        return Genie.Renderer.respond(
-            Genie.Renderer.Html.html("<h1>403 Forbidden</h1><p>You do not have permission to access this page.</p>"),
-            403
-        )
+        user = App.current_user(session)
+        username = user !== nothing ? user.username : "unknown"
+        @warn "Non-admin access attempt to admin route" path=get_current_path() username=username
+        # Redirect to dashboard - non-admins shouldn't access admin routes
+        return redirect("/vue?error=forbidden")
+    end
+
+    return nothing
+end
+
+"""
+    require_admin_api() -> Union{Nothing, HTTP.Messages.Response}
+
+Check if the user is an admin for API requests.
+Returns JSON 401 Unauthorized if not authenticated.
+Returns JSON 403 Forbidden if authenticated but not admin.
+
+Returns nothing if admin, or a JSON error response if not.
+
+Usage in route:
+```julia
+route("/api/admin/tools", method = GET) do
+    admin_result = require_admin_api()
+    if admin_result !== nothing
+        return admin_result
+    end
+    # ... rest of route handler
+end
+```
+"""
+function require_admin_api()
+    # First check authentication
+    auth_result = require_authentication_api()
+    if auth_result !== nothing
+        return auth_result
+    end
+
+    # Then check admin role
+    session = get_session()
+    if !App.is_admin(session)
+        user = App.current_user(session)
+        username = user !== nothing ? user.username : "unknown"
+        @warn "Non-admin API access attempt" path=get_current_path() username=username
+        return api_forbidden("Admin access required")
     end
 
     return nothing
@@ -258,7 +296,8 @@ function is_admin()::Bool
 end
 
 export get_session, store_redirect_url, get_redirect_url, get_current_path
-export check_session_timeout, require_authentication, require_authentication_api, require_admin
+export check_session_timeout, require_authentication, require_authentication_api
+export require_admin, require_admin_api
 export current_user, is_authenticated, is_admin
 export REDIRECT_URL_KEY
 
