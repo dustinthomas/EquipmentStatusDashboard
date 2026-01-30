@@ -93,7 +93,7 @@ function database_path()
 
     env = get(ENV, "GENIE_ENV", get(ENV, "SEARCHLIGHT_ENV", "dev"))
     if env == "prod"
-        return joinpath("db", "qci_status.sqlite")
+        return "/data/qci_status.sqlite"
     elseif env == "test"
         return joinpath("db", "qci_status_test.sqlite")
     else

@@ -1,7 +1,7 @@
 # SearchLight Database Configuration
-# Environment is automatically determined by SEARCHLIGHT_ENV or GENIE_ENV
-
-env: ENV["GENIE_ENV"]
+# Environment is determined by GENIE_ENV or SEARCHLIGHT_ENV env var (dev, prod, test)
+# The DATABASE_PATH env var overrides the database path at runtime (see config/database.jl)
+# NOTE: Do NOT use Julia expressions like ENV["VAR"] in YAML - they won't be evaluated!
 
 dev:
   adapter: SQLite
@@ -12,7 +12,8 @@ dev:
 
 prod:
   adapter: SQLite
-  database: ENV["DATABASE_PATH"]
+  # Default path - will be overridden by DATABASE_PATH env var in config/database.jl
+  database: /data/qci_status.sqlite
   config:
     log_queries: false
     log_level: info
