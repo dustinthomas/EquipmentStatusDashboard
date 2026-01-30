@@ -68,12 +68,12 @@ const admin = reactive({
 - Set up admin view routing and basic navigation with tabs
 
 ### Milestone 2: Tool Management UI
-- **Status:** In Progress
+- **Status:** Complete
 - **Units:** 2.1, 2.2
 - Tool list table with CRUD modals
 
 ### Milestone 3: User Management UI
-- **Status:** Not Started
+- **Status:** In Progress
 - **Units:** 3.1, 3.2
 - User list table with CRUD modals and password reset
 
@@ -89,3 +89,4 @@ const admin = reactive({
 
 - 2026-01-30: Initial plan created
 - 2026-01-30: Milestone 1 complete (Unit 1.1 verified, PR #36)
+- 2026-01-30: Milestone 2 complete (Units 2.1, 2.2 merged, PRs #37, #38)

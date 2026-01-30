@@ -87,6 +87,15 @@ const app = createApp({
                 sortColumn: 'name',
                 sortDirection: 'asc'
             },
+            users: {
+                items: [],
+                meta: {},
+                loading: false,
+                error: null,
+                search: '',
+                sortColumn: 'name',
+                sortDirection: 'asc'
+            },
             // Tool modal state for create/edit
             toolModal: {
                 visible: false,
@@ -970,6 +979,161 @@ const app = createApp({
             return admin.tools.sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc';
         }
 
+        // ========================================
+        // Admin User Management Methods
+        // ========================================
+
+        /**
+         * Fetch all users (including inactive) for admin view.
+         * Calls GET /api/admin/users
+         */
+        async function fetchAdminUsers() {
+            admin.users.loading = true;
+            admin.users.error = null;
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    admin.users.items = data.users || [];
+                    admin.users.meta = data.meta || {};
+                } else if (response.status === 401) {
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    admin.users.error = 'Session expired. Please log in again.';
+                } else if (response.status === 403) {
+                    admin.users.error = 'Access denied. Admin privileges required.';
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    admin.users.error = errorData.error || 'Failed to load users';
+                }
+            } catch (error) {
+                console.error('Failed to fetch admin users:', error);
+                admin.users.error = 'Unable to connect to server. Please try again.';
+            } finally {
+                admin.users.loading = false;
+            }
+        }
+
+        /**
+         * Filter and sort admin users list based on current state.
+         * @returns {Array} Filtered and sorted users
+         */
+        const filteredAdminUsers = computed(() => {
+            let items = [...admin.users.items];
+
+            // Apply search filter (by username or name)
+            if (admin.users.search.trim()) {
+                const searchLower = admin.users.search.toLowerCase().trim();
+                items = items.filter(user =>
+                    user.username.toLowerCase().includes(searchLower) ||
+                    user.name.toLowerCase().includes(searchLower)
+                );
+            }
+
+            // Apply sorting
+            const col = admin.users.sortColumn;
+            const dir = admin.users.sortDirection === 'asc' ? 1 : -1;
+
+            items.sort((a, b) => {
+                let aVal = a[col];
+                let bVal = b[col];
+
+                // Handle special cases for sorting
+                if (col === 'last_login_at') {
+                    // Sort by date - null/empty dates go to the end
+                    aVal = aVal ? new Date(aVal).getTime() : (dir === 1 ? Infinity : -Infinity);
+                    bVal = bVal ? new Date(bVal).getTime() : (dir === 1 ? Infinity : -Infinity);
+                } else if (col === 'role') {
+                    // Sort by role priority: admin first, then operator
+                    const priority = { 'admin': 0, 'operator': 1 };
+                    aVal = priority[aVal] ?? 2;
+                    bVal = priority[bVal] ?? 2;
+                } else if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                if (aVal < bVal) return -1 * dir;
+                if (aVal > bVal) return 1 * dir;
+                return 0;
+            });
+
+            return items;
+        });
+
+        /**
+         * Handle click on admin users table column header for sorting.
+         * @param {string} column - Column name to sort by
+         */
+        function handleAdminUserSortClick(column) {
+            if (admin.users.sortColumn === column) {
+                // Toggle direction
+                admin.users.sortDirection = admin.users.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                admin.users.sortColumn = column;
+                admin.users.sortDirection = 'asc';
+            }
+        }
+
+        /**
+         * Get CSS class for admin users sort indicator.
+         * @param {string} column - Column name
+         * @returns {string} CSS class
+         */
+        function getAdminUserSortClass(column) {
+            if (admin.users.sortColumn !== column) {
+                return 'sortable';
+            }
+            return admin.users.sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc';
+        }
+
+        /**
+         * Open the Add User modal for creating a new user.
+         * (Will be implemented in Unit 3.2)
+         */
+        function openAddUserModal() {
+            // Placeholder - will be implemented in Unit 3.2
+            alert('Add User modal will be implemented in Unit 3.2');
+        }
+
+        /**
+         * Open the Edit User modal for an existing user.
+         * (Will be implemented in Unit 3.2)
+         * @param {Object} user - The user to edit
+         */
+        function openEditUserModal(user) {
+            // Placeholder - will be implemented in Unit 3.2
+            alert('Edit User modal will be implemented in Unit 3.2');
+        }
+
+        /**
+         * Toggle user active status.
+         * (Will be implemented in Unit 3.2)
+         * @param {Object} user - The user to toggle
+         */
+        function toggleUserActive(user) {
+            // Placeholder - will be implemented in Unit 3.2
+            alert('Toggle User active will be implemented in Unit 3.2');
+        }
+
+        /**
+         * Open the Reset Password modal for a user.
+         * (Will be implemented in Unit 3.2)
+         * @param {Object} user - The user whose password to reset
+         */
+        function resetUserPassword(user) {
+            // Placeholder - will be implemented in Unit 3.2
+            alert('Reset Password modal will be implemented in Unit 3.2');
+        }
+
         /**
          * Open the Add Tool modal for creating a new tool.
          */
@@ -1130,6 +1294,11 @@ const app = createApp({
 
             const newUrl = '/admin/users';
             window.history.pushState({ view: 'admin-users' }, '', newUrl);
+
+            // Fetch users if not already loaded
+            if (admin.users.items.length === 0) {
+                fetchAdminUsers();
+            }
         }
 
         /**
@@ -1166,6 +1335,10 @@ const app = createApp({
             if (path === '/admin/users') {
                 currentView.value = 'admin-users';
                 admin.currentTab = 'users';
+                // Fetch users if not already loaded
+                if (admin.users.items.length === 0) {
+                    fetchAdminUsers();
+                }
                 return;
             }
 
@@ -1226,7 +1399,7 @@ const app = createApp({
             if (path === '/admin/users') {
                 currentView.value = 'admin-users';
                 admin.currentTab = 'users';
-                return { view: 'admin-users' };
+                return { view: 'admin-users', fetchAdminUsers: true };
             }
 
             // Check for history view first (more specific path)
@@ -1315,6 +1488,8 @@ const app = createApp({
                         fetchToolDetail(initialView.toolId);
                     } else if (initialView.fetchAdminTools) {
                         fetchAdminTools();
+                    } else if (initialView.fetchAdminUsers) {
+                        fetchAdminUsers();
                     }
                 }
             });
@@ -1421,7 +1596,17 @@ const app = createApp({
             closeToolModal,
             submitToolModal,
             toggleToolActive,
-            validCriticalities
+            validCriticalities,
+
+            // Admin User Methods
+            fetchAdminUsers,
+            filteredAdminUsers,
+            handleAdminUserSortClick,
+            getAdminUserSortClass,
+            openAddUserModal,
+            openEditUserModal,
+            toggleUserActive,
+            resetUserPassword
         };
     },
 
@@ -1969,6 +2154,9 @@ const app = createApp({
                         <template v-else-if="currentView === 'admin-users'">
                             <div class="page-header">
                                 <h1>Admin: User Management</h1>
+                                <p v-if="admin.users.meta.total > 0">
+                                    {{ admin.users.meta.active }} active, {{ admin.users.meta.inactive }} inactive ({{ admin.users.meta.total }} total)
+                                </p>
                             </div>
 
                             <!-- Admin Tab Navigation -->
@@ -1989,11 +2177,150 @@ const app = createApp({
                                 </button>
                             </div>
 
-                            <!-- Users Content (placeholder for now) -->
-                            <div class="card">
-                                <div class="admin-placeholder">
-                                    <p>User management functionality will be implemented in Unit 3.1.</p>
-                                    <p class="admin-placeholder-hint">This view will show a table of all users with search, sort, and CRUD operations.</p>
+                            <!-- Error Message -->
+                            <div v-if="admin.users.error" class="alert alert-error">
+                                {{ admin.users.error }}
+                                <button class="btn btn-sm btn-secondary" style="margin-left: 10px;" @click="fetchAdminUsers">
+                                    Retry
+                                </button>
+                            </div>
+
+                            <!-- Toolbar: Search and Add Button -->
+                            <div class="card admin-toolbar">
+                                <div class="admin-toolbar-row">
+                                    <div class="admin-search-group">
+                                        <input
+                                            type="text"
+                                            v-model="admin.users.search"
+                                            class="form-control admin-search-input"
+                                            placeholder="Search by username or name..."
+                                        />
+                                    </div>
+                                    <button class="btn btn-primary" @click="openAddUserModal">
+                                        Add User
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div v-if="admin.users.loading" class="card" style="text-align: center; padding: 60px 20px;">
+                                <div class="loading-spinner-inline"></div>
+                                <p style="margin-top: 20px; color: #666;">Loading users...</p>
+                            </div>
+
+                            <!-- Users Table -->
+                            <div v-else class="card admin-table-card">
+                                <!-- Empty State -->
+                                <div v-if="filteredAdminUsers.length === 0" style="text-align: center; padding: 60px 20px;">
+                                    <p style="color: #666; font-size: 1.1rem;">No users found</p>
+                                    <p v-if="admin.users.search.trim()" style="color: #999; font-size: 0.9rem; margin-top: 10px;">
+                                        No users match "{{ admin.users.search }}".
+                                        <button class="btn btn-sm btn-secondary" style="margin-left: 8px;" @click="admin.users.search = ''">
+                                            Clear Search
+                                        </button>
+                                    </p>
+                                    <p v-else style="color: #999; font-size: 0.9rem; margin-top: 10px;">
+                                        No users have been created yet.
+                                    </p>
+                                </div>
+
+                                <!-- Table -->
+                                <div v-else class="table-container">
+                                    <table class="table admin-users-table">
+                                        <thead>
+                                            <tr>
+                                                <th
+                                                    class="sortable-header"
+                                                    :class="getAdminUserSortClass('username')"
+                                                    @click="handleAdminUserSortClick('username')"
+                                                    title="Sort by username"
+                                                >
+                                                    Username
+                                                    <span class="sort-indicator"></span>
+                                                </th>
+                                                <th
+                                                    class="sortable-header"
+                                                    :class="getAdminUserSortClass('name')"
+                                                    @click="handleAdminUserSortClick('name')"
+                                                    title="Sort by name"
+                                                >
+                                                    Name
+                                                    <span class="sort-indicator"></span>
+                                                </th>
+                                                <th
+                                                    class="sortable-header"
+                                                    :class="getAdminUserSortClass('role')"
+                                                    @click="handleAdminUserSortClick('role')"
+                                                    title="Sort by role"
+                                                >
+                                                    Role
+                                                    <span class="sort-indicator"></span>
+                                                </th>
+                                                <th
+                                                    class="sortable-header"
+                                                    :class="getAdminUserSortClass('last_login_at')"
+                                                    @click="handleAdminUserSortClick('last_login_at')"
+                                                    title="Sort by last login"
+                                                >
+                                                    Last Login
+                                                    <span class="sort-indicator"></span>
+                                                </th>
+                                                <th>Active</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr
+                                                v-for="user in filteredAdminUsers"
+                                                :key="user.id"
+                                                :class="{ 'admin-row-inactive': !user.is_active }"
+                                            >
+                                                <td class="user-username">{{ user.username }}</td>
+                                                <td>{{ user.name }}</td>
+                                                <td>
+                                                    <span class="role-badge" :class="'role-' + user.role">
+                                                        {{ user.role }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ user.last_login_at_formatted || 'Never' }}</td>
+                                                <td>
+                                                    <span v-if="user.is_active" class="active-badge active-badge-yes">Active</span>
+                                                    <span v-else class="active-badge active-badge-no">Inactive</span>
+                                                </td>
+                                                <td class="admin-actions-cell">
+                                                    <button
+                                                        class="btn btn-sm btn-secondary"
+                                                        title="Edit user"
+                                                        @click.stop="openEditUserModal(user)"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        class="btn btn-sm btn-secondary"
+                                                        title="Reset password"
+                                                        @click.stop="resetUserPassword(user)"
+                                                    >
+                                                        Password
+                                                    </button>
+                                                    <button
+                                                        class="btn btn-sm"
+                                                        :class="user.is_active ? 'btn-outline-danger' : 'btn-outline-success'"
+                                                        :title="user.is_active ? 'Deactivate user' : 'Activate user'"
+                                                        @click.stop="toggleUserActive(user)"
+                                                    >
+                                                        {{ user.is_active ? 'Deactivate' : 'Activate' }}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Table Footer -->
+                                <div v-if="filteredAdminUsers.length > 0" class="admin-table-footer">
+                                    <span class="admin-table-count">
+                                        Showing {{ filteredAdminUsers.length }} of {{ admin.users.meta.total }} users
+                                    </span>
                                 </div>
                             </div>
                         </template>

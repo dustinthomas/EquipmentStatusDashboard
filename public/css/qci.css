@@ -1094,6 +1094,29 @@ select option.status-down { color: #e74c3c; }
 }
 
 /* ========================================
+   Role Badge Styles
+   ======================================== */
+
+.role-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.role-admin {
+    background-color: rgba(30, 32, 75, 0.15);
+    color: #1E204B;
+}
+
+.role-operator {
+    background-color: rgba(128, 128, 128, 0.15);
+    color: #666;
+}
+
+/* ========================================
    Outline Button Variants
    ======================================== */
 
