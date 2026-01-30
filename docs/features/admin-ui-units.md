@@ -42,7 +42,7 @@ Set up admin view routing in Vue app and update server routes to serve the Vue a
 ## Milestone 2: Tool Management UI
 
 ### Unit 2.1: Tool List Table
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/admin-tools-list`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/37
 **Depends on:** 1.1
