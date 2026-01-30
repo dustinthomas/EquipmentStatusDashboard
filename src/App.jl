@@ -261,17 +261,19 @@ function load_app()
 end
 
 """
-    up(port::Int=$PORT; kwargs...)
+    up(port::Int=$PORT; host::String="127.0.0.1", kwargs...)
 
 Start the web server. Automatically calls load_app() if not already called.
+
+For Docker deployment, use `host="0.0.0.0"` to accept external connections.
 """
-function up(port::Int=PORT; kwargs...)
+function up(port::Int=PORT; host::String="127.0.0.1", kwargs...)
     if !_app_loaded[]
         @info "Auto-loading application (load_app() was not called)"
         load_app()
     end
-    @info "Starting server on port $port"
-    Genie.up(port; kwargs...)
+    @info "Starting server on $host:$port"
+    Genie.up(port; host=host, kwargs...)
 end
 
 """

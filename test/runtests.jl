@@ -31,6 +31,57 @@ ENV["SEARCHLIGHT_ENV"] = "test"
         @test isfile(joinpath(@__DIR__, "..", "db", "connection.yml"))
     end
 
+    @testset "Docker Configuration" begin
+        # Test Dockerfile exists and has required content
+        dockerfile_path = joinpath(@__DIR__, "..", "Dockerfile")
+        @test isfile(dockerfile_path)
+
+        dockerfile_content = read(dockerfile_path, String)
+        # Uses official Julia image
+        @test occursin("FROM julia:1.10", dockerfile_content)
+        # Runs Pkg.instantiate()
+        @test occursin("Pkg.instantiate()", dockerfile_content)
+        # Runs precompile
+        @test occursin("Pkg.precompile()", dockerfile_content)
+        # Exposes port 8000
+        @test occursin("EXPOSE 8000", dockerfile_content)
+        # Has health check
+        @test occursin("HEALTHCHECK", dockerfile_content)
+        # Sets required environment variables
+        @test occursin("ENV PORT=8000", dockerfile_content)
+        @test occursin("ENV DATABASE_PATH=/data/qci_status.sqlite", dockerfile_content)
+        @test occursin("ENV SECRET_KEY", dockerfile_content)
+
+        # Test docker-compose.yml exists and has required content
+        compose_path = joinpath(@__DIR__, "..", "docker-compose.yml")
+        @test isfile(compose_path)
+
+        compose_content = read(compose_path, String)
+        # Has service definition
+        @test occursin("services:", compose_content)
+        # Has volume for persistence
+        @test occursin("qci-data:/data", compose_content)
+        # Maps port 8000 (with optional env var substitution)
+        @test occursin(":8000", compose_content)
+        # Has environment variables
+        @test occursin("SECRET_KEY", compose_content)
+        @test occursin("DATABASE_PATH", compose_content)
+        # Has health check
+        @test occursin("healthcheck:", compose_content)
+
+        # Test .dockerignore exists
+        dockerignore_path = joinpath(@__DIR__, "..", ".dockerignore")
+        @test isfile(dockerignore_path)
+
+        dockerignore_content = read(dockerignore_path, String)
+        # Excludes git
+        @test occursin(".git", dockerignore_content)
+        # Excludes test files
+        @test occursin("test/", dockerignore_content)
+        # Excludes database files
+        @test occursin("*.sqlite", dockerignore_content)
+    end
+
     @testset "Vue Frontend and Styles" begin
         # Test Vue app HTML shell exists
         vue_html_path = joinpath(@__DIR__, "..", "public", "index.html")

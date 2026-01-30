@@ -1,0 +1,56 @@
+# QCI Equipment Status Dashboard - Docker Ignore File
+# Files and directories to exclude from the Docker build context
+
+# Git
+.git
+.gitignore
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+plans/
+
+# Development files
+.claude/
+CLAUDE.md
+CLAUDE-WORKFLOW.md
+CODE_INDEX.md
+
+# Test files (not needed in production container)
+test/
+tmp/
+
+# Database files (should be mounted as volume)
+*.sqlite
+*.db
+db/*.sqlite
+
+# Julia development files
+.julia/
+Manifest.toml.orig
+
+# Logs
+*.log
+logs/
+
+# Environment files (secrets should be passed as env vars)
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Session files (should be generated at runtime)
+sessions/
+
+# Cookies and temp files
+cookies.txt

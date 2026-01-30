@@ -54,13 +54,62 @@ The app will be available at `http://localhost:8000`
 
 ### Docker Deployment
 
+#### Using Docker Compose (Recommended)
+
+```bash
+# Start the application
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the application
+docker-compose down
+
+# Stop and remove all data (WARNING: deletes database!)
+docker-compose down -v
+```
+
+#### Using Docker Directly
+
 ```bash
 # Build image
 docker build -t qci-status:latest .
 
-# Run container
-docker run -d -p 8000:8000 -v qci-data:/data qci-status:latest
+# Run container with volume for data persistence
+docker run -d \
+  --name qci-status-dashboard \
+  -p 8000:8000 \
+  -v qci-data:/data \
+  -e SECRET_KEY=your-secret-key-here \
+  -e STALE_THRESHOLD_HOURS=8 \
+  qci-status:latest
+
+# Check health
+curl http://localhost:8000/health
+
+# View logs
+docker logs -f qci-status-dashboard
+
+# Stop container
+docker stop qci-status-dashboard
 ```
+
+#### First-Time Setup (Database Migration & Seed)
+
+After starting the container for the first time, run migrations and seed the database:
+
+```bash
+# Run migrations
+docker exec qci-status-dashboard julia --project=. -e \
+  'include("src/App.jl"); using .App; App.load_app(); using SearchLight; SearchLight.Migration.up()'
+
+# Seed initial data (admin user + sample tools)
+docker exec qci-status-dashboard julia --project=. -e \
+  'include("src/App.jl"); using .App; App.load_app(); include("db/seeds/seed_data.jl"); seed!()'
+```
+
+**Default admin credentials:** username=`admin`, password=`changeme` (change immediately!)
 
 ## User Roles
 
@@ -84,8 +133,17 @@ docker run -d -p 8000:8000 -v qci-data:/data qci-status:latest
 |----------|---------|-------------|
 | `PORT` | `8000` | HTTP server port |
 | `DATABASE_PATH` | `/data/qci_status.sqlite` | SQLite database location |
-| `LOG_LEVEL` | `info` | Logging verbosity |
-| `SECRET_KEY` | (required) | Session encryption key |
+| `LOG_LEVEL` | `info` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
+| `SECRET_KEY` | (required) | Session encryption key. Generate with: `openssl rand -hex 32` |
+| `GENIE_ENV` | `dev` | Environment mode (`dev`, `test`, `prod`) |
+| `STALE_THRESHOLD_HOURS` | `8` | Hours before a tool status is marked as stale |
+| `SESSION_TIMEOUT` | `28800` | Session timeout in seconds (default: 8 hours) |
+
+### Security Notes
+
+- **Always set `SECRET_KEY`** in production. Never use the default dev key.
+- The database file contains password hashes and session data. Protect the volume mount.
+- For production, consider using a reverse proxy (nginx) with TLS.
 
 ## Project Structure
 
