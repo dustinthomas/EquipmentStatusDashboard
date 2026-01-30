@@ -4,7 +4,10 @@
 
 module DashboardHelpers
 
+using Dates
+
 export state_sort_order, truncate_text, format_timestamp, state_css_class, state_display_text
+export is_status_stale, get_stale_threshold_hours
 
 """
     state_sort_order(state::String) -> Int
@@ -85,6 +88,59 @@ function state_display_text(state::String)::String
         "DOWN" => "Down"
     )
     return get(display, state, state)
+end
+
+"""
+    get_stale_threshold_hours() -> Int
+
+Get the stale status threshold in hours from environment variable.
+Default is 8 hours if not set.
+"""
+function get_stale_threshold_hours()::Int
+    threshold_str = get(ENV, "STALE_THRESHOLD_HOURS", "8")
+    try
+        threshold = parse(Int, threshold_str)
+        return max(1, threshold)  # Ensure at least 1 hour
+    catch
+        return 8  # Default to 8 hours on parse error
+    end
+end
+
+"""
+    is_status_stale(timestamp::String) -> Bool
+
+Check if a status timestamp is stale (older than threshold hours).
+Returns false if timestamp is empty or invalid.
+
+The threshold is configured via STALE_THRESHOLD_HOURS environment variable (default: 8).
+"""
+function is_status_stale(timestamp::String)::Bool
+    if isempty(timestamp)
+        return false
+    end
+
+    try
+        # Parse ISO 8601 timestamp (yyyy-mm-ddTHH:MM:SS format)
+        # Handle timestamps with or without fractional seconds
+        ts_str = timestamp
+        if contains(ts_str, ".")
+            ts_str = split(ts_str, ".")[1]  # Remove fractional seconds
+        end
+        if length(ts_str) == 19
+            ts = DateTime(ts_str, "yyyy-mm-ddTHH:MM:SS")
+        elseif length(ts_str) == 16
+            ts = DateTime(ts_str, "yyyy-mm-ddTHH:MM")
+        else
+            return false
+        end
+
+        threshold_hours = get_stale_threshold_hours()
+        cutoff = now() - Hour(threshold_hours)
+        return ts < cutoff
+    catch e
+        # Invalid timestamp format - not stale
+        return false
+    end
 end
 
 end # module DashboardHelpers

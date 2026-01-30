@@ -23,7 +23,7 @@ using .ApiHelpers: api_success, api_error, api_bad_request, api_not_found
 
 # Import dashboard helpers (pure utility functions)
 include(joinpath(@__DIR__, "..", "lib", "dashboard_helpers.jl"))
-using .DashboardHelpers: state_sort_order, truncate_text, format_timestamp, state_css_class, state_display_text
+using .DashboardHelpers: state_sort_order, truncate_text, format_timestamp, state_css_class, state_display_text, is_status_stale, get_stale_threshold_hours
 
 export state_display_text, api_index, api_show, api_update_status, api_history, api_history_csv
 
@@ -185,7 +185,8 @@ function api_index()
             "eta_to_up_formatted" => format_timestamp(t.current_eta_to_up),
             "status_updated_at" => t.current_status_updated_at,
             "status_updated_at_formatted" => format_timestamp(t.current_status_updated_at),
-            "status_updated_by" => get_user_name(t.current_status_updated_by_user_id)
+            "status_updated_by" => get_user_name(t.current_status_updated_by_user_id),
+            "is_stale" => is_status_stale(t.current_status_updated_at)
         )
         for t in sorted_tools
     ]
@@ -197,7 +198,8 @@ function api_index()
             "total" => length(all_tools),
             "filtered" => length(sorted_tools),
             "areas" => areas,
-            "states" => VALID_STATES
+            "states" => VALID_STATES,
+            "stale_threshold_hours" => get_stale_threshold_hours()
         )
     ))
 end
@@ -257,12 +259,13 @@ function api_show()
         "status_updated_at" => tool.current_status_updated_at,
         "status_updated_at_formatted" => format_timestamp(tool.current_status_updated_at),
         "status_updated_by" => get_user_name(tool.current_status_updated_by_user_id),
+        "is_stale" => is_status_stale(tool.current_status_updated_at),
         "is_active" => tool.is_active,
         "created_at" => tool.created_at,
         "updated_at" => tool.updated_at
     )
 
-    api_success(Dict("tool" => tool_data))
+    api_success(Dict("tool" => tool_data, "stale_threshold_hours" => get_stale_threshold_hours()))
 end
 
 """
@@ -390,6 +393,7 @@ function api_update_status()
         "status_updated_at" => tool.current_status_updated_at,
         "status_updated_at_formatted" => format_timestamp(tool.current_status_updated_at),
         "status_updated_by" => get_user_name(tool.current_status_updated_by_user_id),
+        "is_stale" => is_status_stale(tool.current_status_updated_at),
         "is_active" => tool.is_active,
         "created_at" => tool.created_at,
         "updated_at" => tool.updated_at
