@@ -12,7 +12,7 @@ dev:
 
 prod:
   adapter: SQLite
-  database: db/qci_status.sqlite
+  database: ENV["DATABASE_PATH"]
   config:
     log_queries: false
     log_level: info
