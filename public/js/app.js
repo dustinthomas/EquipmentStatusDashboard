@@ -86,8 +86,30 @@ const app = createApp({
                 search: '',
                 sortColumn: 'name',
                 sortDirection: 'asc'
+            },
+            // Tool modal state for create/edit
+            toolModal: {
+                visible: false,
+                mode: 'create',  // 'create' | 'edit'
+                submitting: false,
+                error: null,
+                successMessage: null,
+                // Form fields
+                id: null,
+                name: '',
+                area: '',
+                bay: '',
+                criticality: 'medium'
             }
         });
+
+        // Valid criticality levels for dropdown
+        const validCriticalities = [
+            { value: 'critical', label: 'Critical' },
+            { value: 'high', label: 'High' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'low', label: 'Low' }
+        ];
 
         // ========================================
         // Tool Detail State
@@ -949,11 +971,153 @@ const app = createApp({
         }
 
         /**
-         * Open the Add Tool modal (placeholder - implemented in Unit 2.2).
+         * Open the Add Tool modal for creating a new tool.
          */
         function openAddToolModal() {
-            // Will be implemented in Unit 2.2
-            console.log('Add Tool modal - to be implemented in Unit 2.2');
+            admin.toolModal.mode = 'create';
+            admin.toolModal.id = null;
+            admin.toolModal.name = '';
+            admin.toolModal.area = '';
+            admin.toolModal.bay = '';
+            admin.toolModal.criticality = 'medium';
+            admin.toolModal.error = null;
+            admin.toolModal.successMessage = null;
+            admin.toolModal.visible = true;
+        }
+
+        /**
+         * Open the Edit Tool modal for an existing tool.
+         * @param {Object} tool - The tool to edit
+         */
+        function openEditToolModal(tool) {
+            admin.toolModal.mode = 'edit';
+            admin.toolModal.id = tool.id;
+            admin.toolModal.name = tool.name;
+            admin.toolModal.area = tool.area;
+            admin.toolModal.bay = tool.bay || '';
+            admin.toolModal.criticality = tool.criticality;
+            admin.toolModal.error = null;
+            admin.toolModal.successMessage = null;
+            admin.toolModal.visible = true;
+        }
+
+        /**
+         * Close the tool modal.
+         */
+        function closeToolModal() {
+            admin.toolModal.visible = false;
+            admin.toolModal.error = null;
+            admin.toolModal.successMessage = null;
+        }
+
+        /**
+         * Submit the tool modal form (create or edit).
+         */
+        async function submitToolModal() {
+            // Validate required fields
+            if (!admin.toolModal.name.trim()) {
+                admin.toolModal.error = 'Name is required';
+                return;
+            }
+            if (!admin.toolModal.area.trim()) {
+                admin.toolModal.error = 'Area is required';
+                return;
+            }
+
+            admin.toolModal.submitting = true;
+            admin.toolModal.error = null;
+
+            try {
+                const payload = {
+                    name: admin.toolModal.name.trim(),
+                    area: admin.toolModal.area.trim(),
+                    bay: admin.toolModal.bay.trim(),
+                    criticality: admin.toolModal.criticality
+                };
+
+                const isCreate = admin.toolModal.mode === 'create';
+                const url = isCreate
+                    ? '/api/admin/tools'
+                    : `/api/admin/tools/${admin.toolModal.id}`;
+                const method = isCreate ? 'POST' : 'PUT';
+
+                const response = await fetch(url, {
+                    method: method,
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success - show message briefly, close modal, refresh list
+                    admin.toolModal.successMessage = isCreate
+                        ? 'Tool created successfully'
+                        : 'Tool updated successfully';
+
+                    // Refresh the tools list
+                    await fetchAdminTools();
+
+                    // Close modal after short delay to show success message
+                    setTimeout(() => {
+                        closeToolModal();
+                    }, 1000);
+                } else if (response.status === 401) {
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    admin.toolModal.error = 'Session expired. Please log in again.';
+                } else {
+                    admin.toolModal.error = data.error || 'Failed to save tool';
+                }
+            } catch (error) {
+                console.error('Failed to save tool:', error);
+                admin.toolModal.error = 'Unable to connect to server. Please try again.';
+            } finally {
+                admin.toolModal.submitting = false;
+            }
+        }
+
+        /**
+         * Toggle a tool's active status with confirmation.
+         * @param {Object} tool - The tool to toggle
+         */
+        async function toggleToolActive(tool) {
+            const action = tool.is_active ? 'deactivate' : 'activate';
+            const confirmed = confirm(`Are you sure you want to ${action} "${tool.name}"?`);
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/tools/${tool.id}/toggle-active`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Refresh the tools list
+                    await fetchAdminTools();
+                } else if (response.status === 401) {
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    admin.tools.error = 'Session expired. Please log in again.';
+                } else {
+                    admin.tools.error = data.error || `Failed to ${action} tool`;
+                }
+            } catch (error) {
+                console.error(`Failed to ${action} tool:`, error);
+                admin.tools.error = 'Unable to connect to server. Please try again.';
+            }
         }
 
         /**
@@ -1252,7 +1416,12 @@ const app = createApp({
             filteredAdminTools,
             handleAdminToolSortClick,
             getAdminToolSortClass,
-            openAddToolModal
+            openAddToolModal,
+            openEditToolModal,
+            closeToolModal,
+            submitToolModal,
+            toggleToolActive,
+            validCriticalities
         };
     },
 
@@ -1764,8 +1933,20 @@ const app = createApp({
                                                     <span v-else class="active-badge active-badge-no">Inactive</span>
                                                 </td>
                                                 <td class="admin-actions-cell">
-                                                    <button class="btn btn-sm btn-secondary" title="Edit tool" disabled>
+                                                    <button
+                                                        class="btn btn-sm btn-secondary"
+                                                        title="Edit tool"
+                                                        @click.stop="openEditToolModal(tool)"
+                                                    >
                                                         Edit
+                                                    </button>
+                                                    <button
+                                                        class="btn btn-sm"
+                                                        :class="tool.is_active ? 'btn-outline-danger' : 'btn-outline-success'"
+                                                        :title="tool.is_active ? 'Deactivate tool' : 'Activate tool'"
+                                                        @click.stop="toggleToolActive(tool)"
+                                                    >
+                                                        {{ tool.is_active ? 'Deactivate' : 'Activate' }}
                                                     </button>
                                                 </td>
                                             </tr>
@@ -2117,6 +2298,120 @@ const app = createApp({
                                 </template>
                                 <template v-else>
                                     Save Status
+                                </template>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tool Create/Edit Modal -->
+            <div v-if="admin.toolModal.visible" class="modal-overlay" @click.self="closeToolModal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">{{ admin.toolModal.mode === 'create' ? 'Add Tool' : 'Edit Tool' }}</h2>
+                        <button class="modal-close" @click="closeToolModal" :disabled="admin.toolModal.submitting">&times;</button>
+                    </div>
+
+                    <form @submit.prevent="submitToolModal" class="modal-body">
+                        <!-- Success Message -->
+                        <div v-if="admin.toolModal.successMessage" class="alert alert-success">
+                            {{ admin.toolModal.successMessage }}
+                        </div>
+
+                        <!-- Error Message -->
+                        <div v-if="admin.toolModal.error" class="alert alert-error">
+                            {{ admin.toolModal.error }}
+                        </div>
+
+                        <!-- Name (Required) -->
+                        <div class="form-group">
+                            <label for="tool-name" class="form-label">Name <span class="required">*</span></label>
+                            <input
+                                type="text"
+                                id="tool-name"
+                                v-model="admin.toolModal.name"
+                                class="form-control"
+                                placeholder="Enter tool name"
+                                :disabled="admin.toolModal.submitting"
+                                required
+                                autofocus
+                            />
+                        </div>
+
+                        <!-- Area (Required) -->
+                        <div class="form-group">
+                            <label for="tool-area" class="form-label">Area <span class="required">*</span></label>
+                            <input
+                                type="text"
+                                id="tool-area"
+                                v-model="admin.toolModal.area"
+                                class="form-control"
+                                placeholder="Enter fab area (e.g., Fab A, Cleanroom 1)"
+                                :disabled="admin.toolModal.submitting"
+                                required
+                            />
+                        </div>
+
+                        <!-- Bay (Optional) -->
+                        <div class="form-group">
+                            <label for="tool-bay" class="form-label">Bay/Line</label>
+                            <input
+                                type="text"
+                                id="tool-bay"
+                                v-model="admin.toolModal.bay"
+                                class="form-control"
+                                placeholder="Enter bay or line (optional)"
+                                :disabled="admin.toolModal.submitting"
+                            />
+                        </div>
+
+                        <!-- Criticality (Dropdown) -->
+                        <div class="form-group">
+                            <label for="tool-criticality" class="form-label">Criticality <span class="required">*</span></label>
+                            <select
+                                id="tool-criticality"
+                                v-model="admin.toolModal.criticality"
+                                class="form-control"
+                                :disabled="admin.toolModal.submitting"
+                                required
+                            >
+                                <option
+                                    v-for="crit in validCriticalities"
+                                    :key="crit.value"
+                                    :value="crit.value"
+                                >
+                                    {{ crit.label }}
+                                </option>
+                            </select>
+                            <div class="criticality-preview">
+                                <span class="criticality-badge" :class="'criticality-' + admin.toolModal.criticality">
+                                    {{ admin.toolModal.criticality }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="modal-actions">
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                @click="closeToolModal"
+                                :disabled="admin.toolModal.submitting"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                :disabled="admin.toolModal.submitting || !admin.toolModal.name.trim() || !admin.toolModal.area.trim()"
+                            >
+                                <template v-if="admin.toolModal.submitting">
+                                    <span class="loading-spinner-inline loading-spinner-sm"></span>
+                                    Saving...
+                                </template>
+                                <template v-else>
+                                    {{ admin.toolModal.mode === 'create' ? 'Create Tool' : 'Save Changes' }}
                                 </template>
                             </button>
                         </div>

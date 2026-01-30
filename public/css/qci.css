@@ -1092,3 +1092,37 @@ select option.status-down { color: #e74c3c; }
     background-color: rgba(128, 128, 128, 0.15);
     color: #666;
 }
+
+/* ========================================
+   Outline Button Variants
+   ======================================== */
+
+.btn-outline-danger {
+    background-color: transparent;
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+}
+
+.btn-outline-danger:hover {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-outline-success {
+    background-color: transparent;
+    border: 1px solid #27ae60;
+    color: #27ae60;
+}
+
+.btn-outline-success:hover {
+    background-color: #27ae60;
+    color: white;
+}
+
+/* ========================================
+   Criticality Preview in Modal
+   ======================================== */
+
+.criticality-preview {
+    margin-top: 8px;
+}
