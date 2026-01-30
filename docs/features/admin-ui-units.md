@@ -15,8 +15,9 @@
 ## Milestone 1: Admin Navigation & Shell
 
 ### Unit 1.1: Admin View Routing and Navigation
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/admin-ui-shell`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/36
 **Depends on:** None
 
 **Task:**
