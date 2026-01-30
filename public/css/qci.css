@@ -1149,3 +1149,20 @@ select option.status-down { color: #e74c3c; }
 .criticality-preview {
     margin-top: 8px;
 }
+
+/* ========================================
+   Role Preview in Modal
+   ======================================== */
+
+.role-preview {
+    margin-top: 8px;
+}
+
+/* ========================================
+   Modal Description Text
+   ======================================== */
+
+.modal-description {
+    margin-bottom: 20px;
+    color: #3A3D4A;
+}

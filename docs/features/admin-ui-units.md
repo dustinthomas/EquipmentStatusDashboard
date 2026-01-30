@@ -124,32 +124,33 @@ Implement admin user list table showing all users (including inactive). Include 
 ---
 
 ### Unit 3.2: User Create/Edit/Password/Toggle Modals
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/admin-users-crud`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/40
 **Depends on:** 3.1
 
 **Task:**
 Implement modal forms for creating users, editing users (without password), resetting passwords, and toggling active status with protection for last admin.
 
 **Acceptance Criteria:**
-- [ ] "Add User" button opens create modal
-- [ ] Create form has: username (required), name (required), password (required), role (dropdown)
-- [ ] Role dropdown shows: admin, operator
-- [ ] Create form submits to `POST /api/admin/users`
-- [ ] Clicking edit button/icon on row opens edit modal
-- [ ] Edit form has: username, name, role (NO password field)
-- [ ] Edit form pre-populated with user's current values
-- [ ] Edit form submits to `PUT /api/admin/users/:id`
-- [ ] "Reset Password" button opens password modal
-- [ ] Password modal has single password field
-- [ ] Password modal submits to `POST /api/admin/users/:id/reset-password`
-- [ ] Toggle active button calls `POST /api/admin/users/:id/toggle-active`
-- [ ] Confirmation prompt before toggling active status
-- [ ] Error message shown if trying to deactivate/demote last admin (from API)
-- [ ] Success message shown after create/edit/reset/toggle
-- [ ] Form validation errors displayed from API response
-- [ ] User list refreshes after successful operation
-- [ ] Modal closes on success or cancel
+- [x] "Add User" button opens create modal
+- [x] Create form has: username (required), name (required), password (required), role (dropdown)
+- [x] Role dropdown shows: admin, operator
+- [x] Create form submits to `POST /api/admin/users`
+- [x] Clicking edit button/icon on row opens edit modal
+- [x] Edit form has: username, name, role (NO password field)
+- [x] Edit form pre-populated with user's current values
+- [x] Edit form submits to `PUT /api/admin/users/:id`
+- [x] "Reset Password" button opens password modal
+- [x] Password modal has single password field
+- [x] Password modal submits to `POST /api/admin/users/:id/reset-password`
+- [x] Toggle active button calls `POST /api/admin/users/:id/toggle-active`
+- [x] Confirmation prompt before toggling active status
+- [x] Error message shown if trying to deactivate/demote last admin (from API)
+- [x] Success message shown after create/edit/reset/toggle
+- [x] Form validation errors displayed from API response
+- [x] User list refreshes after successful operation
+- [x] Modal closes on success or cancel
 
 **Files to modify:**
 - `public/js/app.js` - Add userModal, passwordModal state, CRUD methods, modal templates
