@@ -533,6 +533,7 @@ Highlight tools whose status hasn't been updated in configurable time (default 8
 ### Unit 6.3: Dockerfile and Docker Compose
 **Status:** VERIFIED
 **Branch:** `feature/docker`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/35
 **Depends on:** All previous units
 
 **Task:**
