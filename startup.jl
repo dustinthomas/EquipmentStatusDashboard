@@ -12,31 +12,66 @@ using Genie
 # Initialize database connection first
 App.load_app()
 
-# Run migrations on startup (idempotent - safe to run multiple times)
+# Run migrations on startup
+# NOTE: SearchLight's automatic migration discovery (all_up!!) doesn't work reliably,
+# so we manually include and run migration files when tables don't exist.
 @info "Running database migrations..."
+
+# Initialize migration tracking table
 try
-    # Initialize migration tracking table if it doesn't exist
     SearchLight.Migration.init()
 catch e
-    # Table may already exist, which is fine
     if !occursin("already exists", lowercase(string(e)))
         @warn "Migration init warning" exception=e
     end
 end
 
-try
-    # Run all pending migrations (all_up!! runs all migrations that are :down)
-    SearchLight.Migration.all_up!!()
-    @info "Migrations completed successfully"
-catch e
-    error_str = lowercase(string(e))
-    if occursin("already exists", error_str) || occursin("duplicate", error_str)
-        @info "Migrations already applied"
-    else
-        @error "Migration failed" exception=(e, catch_backtrace())
-        rethrow(e)
+# Check which migrations have been applied
+applied_migrations = try
+    result = SearchLight.query("SELECT version FROM schema_migrations")
+    Set(result[!, :version])
+catch
+    Set{String}()
+end
+
+# Define migrations to run (in order)
+migrations = [
+    ("20260122195602", "db/migrations/20260122195602_create_users.jl", :CreateUsers),
+    ("20260122201046", "db/migrations/20260122201046_create_tools.jl", :CreateTools),
+    ("20260122203749", "db/migrations/20260122203749_create_status_events.jl", :CreateStatusEvents),
+]
+
+for (version, file, mod_name) in migrations
+    if version in applied_migrations
+        @info "Migration $version already applied"
+        continue
+    end
+
+    @info "Running migration $version..."
+    try
+        include(file)
+        # Get the module and call up()
+        mod = getfield(Main, mod_name)
+        mod.up()
+        # Record the migration
+        SearchLight.query("INSERT INTO schema_migrations (version) VALUES ('$version')")
+        @info "Migration $version completed"
+    catch e
+        error_str = lowercase(string(e))
+        if occursin("already exists", error_str) || occursin("duplicate", error_str)
+            @info "Migration $version: tables already exist"
+            # Still record it as applied
+            try
+                SearchLight.query("INSERT INTO schema_migrations (version) VALUES ('$version')")
+            catch; end
+        else
+            @error "Migration $version failed" exception=(e, catch_backtrace())
+            rethrow(e)
+        end
     end
 end
+
+@info "Migrations completed successfully"
 
 # Seed admin user if no users exist
 try
