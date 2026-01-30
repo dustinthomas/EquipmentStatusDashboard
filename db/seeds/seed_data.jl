@@ -23,11 +23,12 @@ using .StatusEvents
 using SearchLight
 
 """
-    hash_password(password::String) -> String
+    seed_hash_password(password::String) -> String
 
 Hash a password using SHA256 (compatible with GenieAuthentication).
+Used internally by seed functions to avoid naming conflicts with AuthCore.
 """
-function hash_password(password::String)::String
+function seed_hash_password(password::String)::String
     return bytes2hex(sha256(password))
 end
 
@@ -48,7 +49,7 @@ function seed_admin_user!()::Union{User, Nothing}
     timestamp = Dates.format(now(UTC), dateformat"yyyy-mm-ddTHH:MM:SS")
     admin = User(
         username = "admin",
-        password_hash = hash_password("changeme"),
+        password_hash = seed_hash_password("changeme"),
         name = "System Administrator",
         role = "admin",
         is_active = true,
@@ -171,4 +172,4 @@ function seed!()
 end
 
 # Export the main function
-export seed!, seed_admin_user!, seed_sample_tools!, hash_password
+export seed!, seed_admin_user!, seed_sample_tools!, seed_hash_password
