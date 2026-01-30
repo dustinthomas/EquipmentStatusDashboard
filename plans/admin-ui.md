@@ -90,4 +90,4 @@ const admin = reactive({
 - 2026-01-30: Initial plan created
 - 2026-01-30: Milestone 1 complete (Unit 1.1 verified, PR #36)
 - 2026-01-30: Milestone 2 complete (Units 2.1, 2.2 merged, PRs #37, #38)
-- 2026-01-30: Milestone 3 complete (Units 3.1, 3.2 implemented)
+- 2026-01-30: Milestone 3 complete (Unit 3.1 merged PR #39, Unit 3.2 verified PR #40)
