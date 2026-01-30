@@ -499,8 +499,9 @@ Complete CSS styling with QCI branding. Navy headers, status colors, Raleway fon
 ---
 
 ### Unit 6.2: Stale Status Highlighting
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/stale-highlight`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/34
 **Depends on:** 4.1
 
 **Task:**
