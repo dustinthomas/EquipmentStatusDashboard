@@ -124,7 +124,7 @@ Implement admin user list table showing all users (including inactive). Include 
 ---
 
 ### Unit 3.2: User Create/Edit/Password/Toggle Modals
-**Status:** VERIFIED
+**Status:** MERGED
 **Branch:** `feature/admin-users-crud`
 **PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/40
 **Depends on:** 3.1
