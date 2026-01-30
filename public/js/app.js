@@ -109,6 +109,31 @@ const app = createApp({
                 area: '',
                 bay: '',
                 criticality: 'medium'
+            },
+            // User modal state for create/edit
+            userModal: {
+                visible: false,
+                mode: 'create',  // 'create' | 'edit'
+                submitting: false,
+                error: null,
+                successMessage: null,
+                // Form fields
+                id: null,
+                username: '',
+                name: '',
+                password: '',
+                role: 'operator'
+            },
+            // Password reset modal state
+            passwordModal: {
+                visible: false,
+                submitting: false,
+                error: null,
+                successMessage: null,
+                // Form fields
+                userId: null,
+                userName: '',
+                password: ''
             }
         });
 
@@ -118,6 +143,12 @@ const app = createApp({
             { value: 'high', label: 'High' },
             { value: 'medium', label: 'Medium' },
             { value: 'low', label: 'Low' }
+        ];
+
+        // Valid user roles for dropdown
+        const validRoles = [
+            { value: 'admin', label: 'Admin' },
+            { value: 'operator', label: 'Operator' }
         ];
 
         // ========================================
@@ -1097,41 +1128,245 @@ const app = createApp({
 
         /**
          * Open the Add User modal for creating a new user.
-         * (Will be implemented in Unit 3.2)
          */
         function openAddUserModal() {
-            // Placeholder - will be implemented in Unit 3.2
-            alert('Add User modal will be implemented in Unit 3.2');
+            admin.userModal.mode = 'create';
+            admin.userModal.id = null;
+            admin.userModal.username = '';
+            admin.userModal.name = '';
+            admin.userModal.password = '';
+            admin.userModal.role = 'operator';
+            admin.userModal.error = null;
+            admin.userModal.successMessage = null;
+            admin.userModal.visible = true;
         }
 
         /**
          * Open the Edit User modal for an existing user.
-         * (Will be implemented in Unit 3.2)
          * @param {Object} user - The user to edit
          */
         function openEditUserModal(user) {
-            // Placeholder - will be implemented in Unit 3.2
-            alert('Edit User modal will be implemented in Unit 3.2');
+            admin.userModal.mode = 'edit';
+            admin.userModal.id = user.id;
+            admin.userModal.username = user.username;
+            admin.userModal.name = user.name;
+            admin.userModal.password = '';  // Password is not shown in edit mode
+            admin.userModal.role = user.role;
+            admin.userModal.error = null;
+            admin.userModal.successMessage = null;
+            admin.userModal.visible = true;
         }
 
         /**
-         * Toggle user active status.
-         * (Will be implemented in Unit 3.2)
+         * Close the user modal.
+         */
+        function closeUserModal() {
+            admin.userModal.visible = false;
+            admin.userModal.error = null;
+            admin.userModal.successMessage = null;
+        }
+
+        /**
+         * Submit the user modal form (create or edit).
+         */
+        async function submitUserModal() {
+            // Validate required fields
+            if (!admin.userModal.username.trim()) {
+                admin.userModal.error = 'Username is required';
+                return;
+            }
+            if (!admin.userModal.name.trim()) {
+                admin.userModal.error = 'Name is required';
+                return;
+            }
+            // Password required only for create mode
+            if (admin.userModal.mode === 'create' && !admin.userModal.password.trim()) {
+                admin.userModal.error = 'Password is required';
+                return;
+            }
+
+            admin.userModal.submitting = true;
+            admin.userModal.error = null;
+
+            try {
+                const isCreate = admin.userModal.mode === 'create';
+                const payload = {
+                    username: admin.userModal.username.trim(),
+                    name: admin.userModal.name.trim(),
+                    role: admin.userModal.role
+                };
+
+                // Only include password for create mode
+                if (isCreate) {
+                    payload.password = admin.userModal.password;
+                }
+
+                const url = isCreate
+                    ? '/api/admin/users'
+                    : `/api/admin/users/${admin.userModal.id}`;
+                const method = isCreate ? 'POST' : 'PUT';
+
+                const response = await fetch(url, {
+                    method: method,
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success - show message briefly, close modal, refresh list
+                    admin.userModal.successMessage = isCreate
+                        ? 'User created successfully'
+                        : 'User updated successfully';
+
+                    // Refresh the users list
+                    await fetchAdminUsers();
+
+                    // Close modal after short delay to show success message
+                    setTimeout(() => {
+                        closeUserModal();
+                    }, 1000);
+                } else if (response.status === 401) {
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    admin.userModal.error = 'Session expired. Please log in again.';
+                } else {
+                    admin.userModal.error = data.error || 'Failed to save user';
+                }
+            } catch (error) {
+                console.error('Failed to save user:', error);
+                admin.userModal.error = 'Unable to connect to server. Please try again.';
+            } finally {
+                admin.userModal.submitting = false;
+            }
+        }
+
+        /**
+         * Toggle user active status with confirmation.
          * @param {Object} user - The user to toggle
          */
-        function toggleUserActive(user) {
-            // Placeholder - will be implemented in Unit 3.2
-            alert('Toggle User active will be implemented in Unit 3.2');
+        async function toggleUserActive(user) {
+            const action = user.is_active ? 'deactivate' : 'activate';
+            const confirmed = confirm(`Are you sure you want to ${action} "${user.name}"?`);
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${user.id}/toggle-active`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Refresh the users list
+                    await fetchAdminUsers();
+                } else if (response.status === 401) {
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    admin.users.error = 'Session expired. Please log in again.';
+                } else {
+                    admin.users.error = data.error || `Failed to ${action} user`;
+                }
+            } catch (error) {
+                console.error(`Failed to ${action} user:`, error);
+                admin.users.error = 'Unable to connect to server. Please try again.';
+            }
         }
 
         /**
          * Open the Reset Password modal for a user.
-         * (Will be implemented in Unit 3.2)
+         * @param {Object} user - The user whose password to reset
+         */
+        function openPasswordModal(user) {
+            admin.passwordModal.userId = user.id;
+            admin.passwordModal.userName = user.name;
+            admin.passwordModal.password = '';
+            admin.passwordModal.error = null;
+            admin.passwordModal.successMessage = null;
+            admin.passwordModal.visible = true;
+        }
+
+        /**
+         * Close the password reset modal.
+         */
+        function closePasswordModal() {
+            admin.passwordModal.visible = false;
+            admin.passwordModal.error = null;
+            admin.passwordModal.successMessage = null;
+        }
+
+        /**
+         * Submit the password reset form.
+         */
+        async function submitPasswordModal() {
+            // Validate password
+            if (!admin.passwordModal.password.trim()) {
+                admin.passwordModal.error = 'Password is required';
+                return;
+            }
+
+            admin.passwordModal.submitting = true;
+            admin.passwordModal.error = null;
+
+            try {
+                const response = await fetch(`/api/admin/users/${admin.passwordModal.userId}/reset-password`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: admin.passwordModal.password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success - show message briefly, close modal
+                    admin.passwordModal.successMessage = 'Password reset successfully';
+
+                    // Refresh the users list (to update any timestamps)
+                    await fetchAdminUsers();
+
+                    // Close modal after short delay to show success message
+                    setTimeout(() => {
+                        closePasswordModal();
+                    }, 1000);
+                } else if (response.status === 401) {
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    admin.passwordModal.error = 'Session expired. Please log in again.';
+                } else {
+                    admin.passwordModal.error = data.error || 'Failed to reset password';
+                }
+            } catch (error) {
+                console.error('Failed to reset password:', error);
+                admin.passwordModal.error = 'Unable to connect to server. Please try again.';
+            } finally {
+                admin.passwordModal.submitting = false;
+            }
+        }
+
+        /**
+         * Reset user password (wrapper that calls openPasswordModal).
          * @param {Object} user - The user whose password to reset
          */
         function resetUserPassword(user) {
-            // Placeholder - will be implemented in Unit 3.2
-            alert('Reset Password modal will be implemented in Unit 3.2');
+            openPasswordModal(user);
         }
 
         /**
@@ -1605,8 +1840,14 @@ const app = createApp({
             getAdminUserSortClass,
             openAddUserModal,
             openEditUserModal,
+            closeUserModal,
+            submitUserModal,
             toggleUserActive,
-            resetUserPassword
+            resetUserPassword,
+            openPasswordModal,
+            closePasswordModal,
+            submitPasswordModal,
+            validRoles
         };
     },
 
@@ -2739,6 +2980,190 @@ const app = createApp({
                                 </template>
                                 <template v-else>
                                     {{ admin.toolModal.mode === 'create' ? 'Create Tool' : 'Save Changes' }}
+                                </template>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- User Create/Edit Modal -->
+            <div v-if="admin.userModal.visible" class="modal-overlay" @click.self="closeUserModal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">{{ admin.userModal.mode === 'create' ? 'Add User' : 'Edit User' }}</h2>
+                        <button class="modal-close" @click="closeUserModal" :disabled="admin.userModal.submitting">&times;</button>
+                    </div>
+
+                    <form @submit.prevent="submitUserModal" class="modal-body">
+                        <!-- Success Message -->
+                        <div v-if="admin.userModal.successMessage" class="alert alert-success">
+                            {{ admin.userModal.successMessage }}
+                        </div>
+
+                        <!-- Error Message -->
+                        <div v-if="admin.userModal.error" class="alert alert-error">
+                            {{ admin.userModal.error }}
+                        </div>
+
+                        <!-- Username (Required) -->
+                        <div class="form-group">
+                            <label for="user-username" class="form-label">Username <span class="required">*</span></label>
+                            <input
+                                type="text"
+                                id="user-username"
+                                v-model="admin.userModal.username"
+                                class="form-control"
+                                placeholder="Enter username"
+                                :disabled="admin.userModal.submitting"
+                                required
+                                autofocus
+                            />
+                            <small class="form-text">Letters, numbers, and underscores only</small>
+                        </div>
+
+                        <!-- Name (Required) -->
+                        <div class="form-group">
+                            <label for="user-name" class="form-label">Display Name <span class="required">*</span></label>
+                            <input
+                                type="text"
+                                id="user-name"
+                                v-model="admin.userModal.name"
+                                class="form-control"
+                                placeholder="Enter full name"
+                                :disabled="admin.userModal.submitting"
+                                required
+                            />
+                        </div>
+
+                        <!-- Password (Required for create, hidden for edit) -->
+                        <div v-if="admin.userModal.mode === 'create'" class="form-group">
+                            <label for="user-password" class="form-label">Password <span class="required">*</span></label>
+                            <input
+                                type="password"
+                                id="user-password"
+                                v-model="admin.userModal.password"
+                                class="form-control"
+                                placeholder="Enter password"
+                                :disabled="admin.userModal.submitting"
+                                required
+                            />
+                            <small class="form-text">Minimum 6 characters</small>
+                        </div>
+
+                        <!-- Role (Dropdown) -->
+                        <div class="form-group">
+                            <label for="user-role" class="form-label">Role <span class="required">*</span></label>
+                            <select
+                                id="user-role"
+                                v-model="admin.userModal.role"
+                                class="form-control"
+                                :disabled="admin.userModal.submitting"
+                                required
+                            >
+                                <option
+                                    v-for="role in validRoles"
+                                    :key="role.value"
+                                    :value="role.value"
+                                >
+                                    {{ role.label }}
+                                </option>
+                            </select>
+                            <div class="role-preview">
+                                <span class="role-badge" :class="'role-' + admin.userModal.role">
+                                    {{ admin.userModal.role }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="modal-actions">
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                @click="closeUserModal"
+                                :disabled="admin.userModal.submitting"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                :disabled="admin.userModal.submitting || !admin.userModal.username.trim() || !admin.userModal.name.trim() || (admin.userModal.mode === 'create' && !admin.userModal.password.trim())"
+                            >
+                                <template v-if="admin.userModal.submitting">
+                                    <span class="loading-spinner-inline loading-spinner-sm"></span>
+                                    Saving...
+                                </template>
+                                <template v-else>
+                                    {{ admin.userModal.mode === 'create' ? 'Create User' : 'Save Changes' }}
+                                </template>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Password Reset Modal -->
+            <div v-if="admin.passwordModal.visible" class="modal-overlay" @click.self="closePasswordModal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Reset Password</h2>
+                        <button class="modal-close" @click="closePasswordModal" :disabled="admin.passwordModal.submitting">&times;</button>
+                    </div>
+
+                    <form @submit.prevent="submitPasswordModal" class="modal-body">
+                        <!-- Success Message -->
+                        <div v-if="admin.passwordModal.successMessage" class="alert alert-success">
+                            {{ admin.passwordModal.successMessage }}
+                        </div>
+
+                        <!-- Error Message -->
+                        <div v-if="admin.passwordModal.error" class="alert alert-error">
+                            {{ admin.passwordModal.error }}
+                        </div>
+
+                        <p class="modal-description">
+                            Enter a new password for <strong>{{ admin.passwordModal.userName }}</strong>
+                        </p>
+
+                        <!-- New Password -->
+                        <div class="form-group">
+                            <label for="reset-password" class="form-label">New Password <span class="required">*</span></label>
+                            <input
+                                type="password"
+                                id="reset-password"
+                                v-model="admin.passwordModal.password"
+                                class="form-control"
+                                placeholder="Enter new password"
+                                :disabled="admin.passwordModal.submitting"
+                                required
+                                autofocus
+                            />
+                            <small class="form-text">Minimum 6 characters</small>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="modal-actions">
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                @click="closePasswordModal"
+                                :disabled="admin.passwordModal.submitting"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                :disabled="admin.passwordModal.submitting || !admin.passwordModal.password.trim()"
+                            >
+                                <template v-if="admin.passwordModal.submitting">
+                                    <span class="loading-spinner-inline loading-spinner-sm"></span>
+                                    Resetting...
+                                </template>
+                                <template v-else>
+                                    Reset Password
                                 </template>
                             </button>
                         </div>
