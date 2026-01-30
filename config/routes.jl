@@ -109,11 +109,16 @@ end
 # Vue Frontend Routes
 # ========================================
 
+# Helper function to get the Vue app index.html path
+function vue_index_path()
+    joinpath(Genie.config.server_document_root, "dist", "index.html")
+end
+
 # Serve Vue app for /vue routes
 # No server-side auth required - Vue handles authentication via API
 route("/vue", method = GET) do
     Genie.Renderer.respond(
-        read(joinpath(Genie.config.server_document_root, "index.html"), String),
+        read(vue_index_path(), String),
         :html
     )
 end
@@ -122,7 +127,7 @@ end
 # Serves same index.html, Vue router handles the path
 route("/vue/*", method = GET) do
     Genie.Renderer.respond(
-        read(joinpath(Genie.config.server_document_root, "index.html"), String),
+        read(vue_index_path(), String),
         :html
     )
 end
@@ -152,7 +157,7 @@ route("/admin/tools", method = GET) do
         return admin_result
     end
     Genie.Renderer.respond(
-        read(joinpath(Genie.config.server_document_root, "index.html"), String),
+        read(vue_index_path(), String),
         :html
     )
 end
@@ -167,7 +172,7 @@ route("/admin/users", method = GET) do
         return admin_result
     end
     Genie.Renderer.respond(
-        read(joinpath(Genie.config.server_document_root, "index.html"), String),
+        read(vue_index_path(), String),
         :html
     )
 end

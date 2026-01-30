@@ -46,3 +46,7 @@ temp/
 # Session/local files
 cookies.txt
 .claude/settings.local.json
+
+# Frontend (Vue/Node)
+frontend/node_modules/
+frontend/.vite/
