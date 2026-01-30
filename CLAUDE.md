@@ -337,6 +337,16 @@ font-family: "Raleway", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-seri
 **Fix:** Modified `App.up()` to automatically call `load_app()` if it hasn't been called yet. Added `_app_loaded` flag to track initialization state and prevent double-loading.
 **Rule:** `App.up()` now auto-initializes. Manual `App.load_app()` is only needed if you want to load the database/routes without starting the server.
 
+### 2026-01-30 - YAML config doesn't evaluate Julia expressions
+**What happened:** Production deployment failed because `db/connection.yml` had `database: ENV["DATABASE_PATH"]`. SearchLight's YAML parser doesn't evaluate Julia expressions - it stored the literal string `ENV["DATABASE_PATH"]` as the filename, creating a database file literally named `ENV["DATABASE_PATH"]` in `/app/`.
+**Fix:** Changed connection.yml to use hardcoded paths (e.g., `/data/qci_status.sqlite` for prod). The `config/database.jl` code already has logic to override from `DATABASE_PATH` env var if set.
+**Rule:** Never use Julia expressions like `ENV["VAR"]` in YAML config files. Use hardcoded defaults and override in Julia code.
+
+### 2026-01-30 - SearchLight migration auto-discovery doesn't work
+**What happened:** `SearchLight.Migration.all_up!!()` wasn't finding migration files even though they existed in `db/migrations/` with correct naming (`20260122195602_create_users.jl`). The `all_migrations()` function returned empty arrays.
+**Fix:** Modified `startup.jl` to manually include and run each migration file when its version isn't in schema_migrations table, bypassing SearchLight's broken auto-discovery.
+**Rule:** Don't rely on SearchLight's automatic migration discovery. Manually list and run migrations in startup.jl.
+
 ### Template
 ```
 ### [DATE] - [Brief description]
