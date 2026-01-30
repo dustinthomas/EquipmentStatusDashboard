@@ -145,19 +145,14 @@ end
 # Admin: Tools list
 # GET /admin/tools - List all tools (including inactive)
 # Protected: requires admin role (redirects to dashboard if not admin)
+# Serves Vue app - Vue handles rendering the admin tools view
 route("/admin/tools", method = GET) do
     admin_result = AuthHelpers.require_admin()
     if admin_result !== nothing
         return admin_result
     end
-    # Placeholder - will be implemented in Unit 5.2
     Genie.Renderer.respond(
-        """<!DOCTYPE html>
-        <html><head><title>Admin - Tools</title></head>
-        <body><h1>Admin: Tool Management</h1>
-        <p>This page is under construction. Tool management will be implemented in Unit 5.2.</p>
-        <p><a href="/vue">Return to Dashboard</a></p>
-        </body></html>""",
+        read(joinpath(Genie.config.server_document_root, "index.html"), String),
         :html
     )
 end
@@ -165,19 +160,14 @@ end
 # Admin: Users list
 # GET /admin/users - List all users
 # Protected: requires admin role (redirects to dashboard if not admin)
+# Serves Vue app - Vue handles rendering the admin users view
 route("/admin/users", method = GET) do
     admin_result = AuthHelpers.require_admin()
     if admin_result !== nothing
         return admin_result
     end
-    # Placeholder - will be implemented in Unit 5.3
     Genie.Renderer.respond(
-        """<!DOCTYPE html>
-        <html><head><title>Admin - Users</title></head>
-        <body><h1>Admin: User Management</h1>
-        <p>This page is under construction. User management will be implemented in Unit 5.3.</p>
-        <p><a href="/vue">Return to Dashboard</a></p>
-        </body></html>""",
+        read(joinpath(Genie.config.server_document_root, "index.html"), String),
         :html
     )
 end

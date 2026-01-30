@@ -888,3 +888,71 @@ select option.status-down { color: #e74c3c; }
     opacity: 1;
     visibility: visible;
 }
+
+/* ========================================
+   Admin Navigation Styles
+   ======================================== */
+
+/* Active navigation link */
+.nav-link-active {
+    background-color: var(--qci-light-navy);
+}
+
+/* Admin Tab Navigation */
+.admin-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    background-color: var(--qci-white);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.admin-tab {
+    flex: 1;
+    padding: 14px 24px;
+    border: none;
+    background-color: var(--qci-white);
+    color: var(--qci-body-text);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    border-bottom: 3px solid transparent;
+}
+
+.admin-tab:hover {
+    background-color: var(--qci-light-grey);
+}
+
+.admin-tab-active {
+    background-color: var(--qci-light-grey);
+    color: var(--qci-dark-navy);
+    border-bottom-color: var(--qci-dark-navy);
+}
+
+.admin-tab:first-child {
+    border-top-left-radius: 8px;
+}
+
+.admin-tab:last-child {
+    border-top-right-radius: 8px;
+}
+
+/* Admin placeholder content */
+.admin-placeholder {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.admin-placeholder p {
+    color: #666;
+    font-size: 1.1rem;
+    margin: 0 0 10px 0;
+}
+
+.admin-placeholder-hint {
+    color: #999 !important;
+    font-size: 0.9rem !important;
+}

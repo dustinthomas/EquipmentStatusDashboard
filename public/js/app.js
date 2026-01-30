@@ -69,9 +69,16 @@ const app = createApp({
         // ========================================
         // View/Navigation State
         // ========================================
-        // currentView: 'dashboard' | 'tool-detail' | 'tool-history'
+        // currentView: 'dashboard' | 'tool-detail' | 'tool-history' | 'admin-tools' | 'admin-users'
         const currentView = ref('dashboard');
         const selectedToolId = ref(null);
+
+        // ========================================
+        // Admin State
+        // ========================================
+        const admin = reactive({
+            currentTab: 'tools'  // 'tools' | 'users'
+        });
 
         // ========================================
         // Tool Detail State
@@ -800,6 +807,46 @@ const app = createApp({
             return toolHistory.fromDate !== '' || toolHistory.toDate !== '';
         });
 
+        // ========================================
+        // Admin Navigation Methods
+        // ========================================
+
+        /**
+         * Navigate to admin tools view.
+         * Updates URL and sets currentView.
+         */
+        function navigateToAdminTools() {
+            currentView.value = 'admin-tools';
+            admin.currentTab = 'tools';
+
+            const newUrl = '/admin/tools';
+            window.history.pushState({ view: 'admin-tools' }, '', newUrl);
+        }
+
+        /**
+         * Navigate to admin users view.
+         * Updates URL and sets currentView.
+         */
+        function navigateToAdminUsers() {
+            currentView.value = 'admin-users';
+            admin.currentTab = 'users';
+
+            const newUrl = '/admin/users';
+            window.history.pushState({ view: 'admin-users' }, '', newUrl);
+        }
+
+        /**
+         * Switch admin tab.
+         * @param {string} tab - The tab to switch to ('tools' or 'users')
+         */
+        function switchAdminTab(tab) {
+            if (tab === 'tools') {
+                navigateToAdminTools();
+            } else if (tab === 'users') {
+                navigateToAdminUsers();
+            }
+        }
+
         /**
          * Handle browser back/forward navigation.
          * Updates view based on URL state.
@@ -807,6 +854,19 @@ const app = createApp({
          */
         function handlePopState(event) {
             const path = window.location.pathname;
+
+            // Check for admin views first
+            if (path === '/admin/tools') {
+                currentView.value = 'admin-tools';
+                admin.currentTab = 'tools';
+                return;
+            }
+
+            if (path === '/admin/users') {
+                currentView.value = 'admin-users';
+                admin.currentTab = 'users';
+                return;
+            }
 
             // Check for history view first (more specific path)
             if (path.match(/\/vue\/tools\/\d+\/history/)) {
@@ -849,11 +909,24 @@ const app = createApp({
 
         /**
          * Initialize view based on current URL.
-         * Called on app mount to handle direct navigation to tool detail or history.
-         * @returns {Object|null} Object with toolId and view type, or null for dashboard
+         * Called on app mount to handle direct navigation to tool detail, history, or admin views.
+         * @returns {Object|null} Object with view type (and optionally toolId), or null for dashboard
          */
         function initializeViewFromUrl() {
             const path = window.location.pathname;
+
+            // Check for admin views first
+            if (path === '/admin/tools') {
+                currentView.value = 'admin-tools';
+                admin.currentTab = 'tools';
+                return { view: 'admin-tools' };
+            }
+
+            if (path === '/admin/users') {
+                currentView.value = 'admin-users';
+                admin.currentTab = 'users';
+                return { view: 'admin-users' };
+            }
 
             // Check for history view first (more specific path)
             if (path.match(/\/vue\/tools\/\d+\/history/)) {
@@ -989,6 +1062,7 @@ const app = createApp({
             statusForm,
             validStates,
             toolHistory,
+            admin,
 
             // Computed
             isAdmin,
@@ -1029,7 +1103,12 @@ const app = createApp({
             fetchToolHistory,
             applyHistoryFilters,
             clearHistoryFilters,
-            exportHistoryCsv
+            exportHistoryCsv,
+
+            // Admin Methods
+            navigateToAdminTools,
+            navigateToAdminUsers,
+            switchAdminTab
         };
     },
 
@@ -1048,8 +1127,8 @@ const app = createApp({
                         </a>
                         <div class="nav-links">
                             <template v-if="auth.isAuthenticated">
-                                <a href="/vue" class="nav-link" @click.prevent="navigateToDashboard">Dashboard</a>
-                                <a v-if="isAdmin" href="/admin" class="nav-link">Admin</a>
+                                <a href="/vue" class="nav-link" :class="{ 'nav-link-active': currentView === 'dashboard' || currentView === 'tool-detail' || currentView === 'tool-history' }" @click.prevent="navigateToDashboard">Dashboard</a>
+                                <a v-if="isAdmin" href="/admin/tools" class="nav-link" :class="{ 'nav-link-active': currentView === 'admin-tools' || currentView === 'admin-users' }" @click.prevent="navigateToAdminTools">Admin</a>
                                 <span class="nav-divider"></span>
                                 <span class="user-info">{{ userName }}</span>
                                 <button
@@ -1399,6 +1478,76 @@ const app = createApp({
                                     <div v-if="toolHistory.events.length > 0" class="history-footer">
                                         <span class="history-count">{{ toolHistory.events.length }} record(s)</span>
                                     </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- ========================================
+                             Admin Tools View
+                             ======================================== -->
+                        <template v-else-if="currentView === 'admin-tools'">
+                            <div class="page-header">
+                                <h1>Admin: Tool Management</h1>
+                            </div>
+
+                            <!-- Admin Tab Navigation -->
+                            <div class="admin-tabs">
+                                <button
+                                    class="admin-tab"
+                                    :class="{ 'admin-tab-active': admin.currentTab === 'tools' }"
+                                    @click="switchAdminTab('tools')"
+                                >
+                                    Tools
+                                </button>
+                                <button
+                                    class="admin-tab"
+                                    :class="{ 'admin-tab-active': admin.currentTab === 'users' }"
+                                    @click="switchAdminTab('users')"
+                                >
+                                    Users
+                                </button>
+                            </div>
+
+                            <!-- Tools Content (placeholder for now) -->
+                            <div class="card">
+                                <div class="admin-placeholder">
+                                    <p>Tool management functionality will be implemented in Unit 2.1.</p>
+                                    <p class="admin-placeholder-hint">This view will show a table of all tools (including inactive) with search, sort, and CRUD operations.</p>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- ========================================
+                             Admin Users View
+                             ======================================== -->
+                        <template v-else-if="currentView === 'admin-users'">
+                            <div class="page-header">
+                                <h1>Admin: User Management</h1>
+                            </div>
+
+                            <!-- Admin Tab Navigation -->
+                            <div class="admin-tabs">
+                                <button
+                                    class="admin-tab"
+                                    :class="{ 'admin-tab-active': admin.currentTab === 'tools' }"
+                                    @click="switchAdminTab('tools')"
+                                >
+                                    Tools
+                                </button>
+                                <button
+                                    class="admin-tab"
+                                    :class="{ 'admin-tab-active': admin.currentTab === 'users' }"
+                                    @click="switchAdminTab('users')"
+                                >
+                                    Users
+                                </button>
+                            </div>
+
+                            <!-- Users Content (placeholder for now) -->
+                            <div class="card">
+                                <div class="admin-placeholder">
+                                    <p>User management functionality will be implemented in Unit 3.1.</p>
+                                    <p class="admin-placeholder-hint">This view will show a table of all users with search, sort, and CRUD operations.</p>
                                 </div>
                             </div>
                         </template>
