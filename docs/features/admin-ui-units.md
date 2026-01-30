@@ -67,7 +67,7 @@ Implement admin tool list table showing all tools (including inactive). Include 
 ---
 
 ### Unit 2.2: Tool Create/Edit/Toggle Modals
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/admin-tools-crud`
 **Depends on:** 2.1
 
@@ -75,19 +75,19 @@ Implement admin tool list table showing all tools (including inactive). Include 
 Implement modal forms for creating and editing tools, plus toggle active functionality with confirmation.
 
 **Acceptance Criteria:**
-- [ ] "Add Tool" button opens create modal
-- [ ] Create form has: name (required), area (required), bay (optional), criticality (dropdown)
-- [ ] Criticality dropdown shows: critical, high, medium, low
-- [ ] Create form submits to `POST /api/admin/tools`
-- [ ] Clicking edit button/icon on row opens edit modal
-- [ ] Edit form pre-populated with tool's current values
-- [ ] Edit form submits to `PUT /api/admin/tools/:id`
-- [ ] Toggle active button calls `POST /api/admin/tools/:id/toggle-active`
-- [ ] Confirmation prompt before toggling active status
-- [ ] Success message shown after create/edit/toggle
-- [ ] Form validation errors displayed from API response
-- [ ] Tool list refreshes after successful operation
-- [ ] Modal closes on success or cancel
+- [x] "Add Tool" button opens create modal
+- [x] Create form has: name (required), area (required), bay (optional), criticality (dropdown)
+- [x] Criticality dropdown shows: critical, high, medium, low
+- [x] Create form submits to `POST /api/admin/tools`
+- [x] Clicking edit button/icon on row opens edit modal
+- [x] Edit form pre-populated with tool's current values
+- [x] Edit form submits to `PUT /api/admin/tools/:id`
+- [x] Toggle active button calls `POST /api/admin/tools/:id/toggle-active`
+- [x] Confirmation prompt before toggling active status
+- [x] Success message shown after create/edit/toggle
+- [x] Form validation errors displayed from API response
+- [x] Tool list refreshes after successful operation
+- [x] Modal closes on success or cancel
 
 **Files to modify:**
 - `public/js/app.js` - Add toolModal state, create/edit/toggle methods, modal templates
