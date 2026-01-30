@@ -77,7 +77,16 @@ const app = createApp({
         // Admin State
         // ========================================
         const admin = reactive({
-            currentTab: 'tools'  // 'tools' | 'users'
+            currentTab: 'tools',  // 'tools' | 'users'
+            tools: {
+                items: [],
+                meta: {},
+                loading: false,
+                error: null,
+                search: '',
+                sortColumn: 'name',
+                sortDirection: 'asc'
+            }
         });
 
         // ========================================
@@ -821,6 +830,130 @@ const app = createApp({
 
             const newUrl = '/admin/tools';
             window.history.pushState({ view: 'admin-tools' }, '', newUrl);
+
+            // Fetch tools if not already loaded
+            if (admin.tools.items.length === 0) {
+                fetchAdminTools();
+            }
+        }
+
+        // ========================================
+        // Admin Tool Management Methods
+        // ========================================
+
+        /**
+         * Fetch all tools (including inactive) for admin view.
+         * Calls GET /api/admin/tools
+         */
+        async function fetchAdminTools() {
+            admin.tools.loading = true;
+            admin.tools.error = null;
+
+            try {
+                const response = await fetch('/api/admin/tools', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    admin.tools.items = data.tools || [];
+                    admin.tools.meta = data.meta || {};
+                } else if (response.status === 401) {
+                    auth.isAuthenticated = false;
+                    auth.user = null;
+                    admin.tools.error = 'Session expired. Please log in again.';
+                } else if (response.status === 403) {
+                    admin.tools.error = 'Access denied. Admin privileges required.';
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    admin.tools.error = errorData.error || 'Failed to load tools';
+                }
+            } catch (error) {
+                console.error('Failed to fetch admin tools:', error);
+                admin.tools.error = 'Unable to connect to server. Please try again.';
+            } finally {
+                admin.tools.loading = false;
+            }
+        }
+
+        /**
+         * Filter and sort admin tools list based on current state.
+         * @returns {Array} Filtered and sorted tools
+         */
+        const filteredAdminTools = computed(() => {
+            let items = [...admin.tools.items];
+
+            // Apply search filter
+            if (admin.tools.search.trim()) {
+                const searchLower = admin.tools.search.toLowerCase().trim();
+                items = items.filter(tool =>
+                    tool.name.toLowerCase().includes(searchLower)
+                );
+            }
+
+            // Apply sorting
+            const col = admin.tools.sortColumn;
+            const dir = admin.tools.sortDirection === 'asc' ? 1 : -1;
+
+            items.sort((a, b) => {
+                let aVal = a[col];
+                let bVal = b[col];
+
+                // Handle special cases for sorting
+                if (col === 'criticality') {
+                    // Sort by criticality priority: critical > high > medium > low
+                    const priority = { 'critical': 0, 'high': 1, 'medium': 2, 'low': 3 };
+                    aVal = priority[aVal] ?? 4;
+                    bVal = priority[bVal] ?? 4;
+                } else if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                if (aVal < bVal) return -1 * dir;
+                if (aVal > bVal) return 1 * dir;
+                return 0;
+            });
+
+            return items;
+        });
+
+        /**
+         * Handle click on admin tools table column header for sorting.
+         * @param {string} column - Column name to sort by
+         */
+        function handleAdminToolSortClick(column) {
+            if (admin.tools.sortColumn === column) {
+                // Toggle direction
+                admin.tools.sortDirection = admin.tools.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                admin.tools.sortColumn = column;
+                admin.tools.sortDirection = 'asc';
+            }
+        }
+
+        /**
+         * Get CSS class for admin tools sort indicator.
+         * @param {string} column - Column name
+         * @returns {string} CSS class
+         */
+        function getAdminToolSortClass(column) {
+            if (admin.tools.sortColumn !== column) {
+                return 'sortable';
+            }
+            return admin.tools.sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc';
+        }
+
+        /**
+         * Open the Add Tool modal (placeholder - implemented in Unit 2.2).
+         */
+        function openAddToolModal() {
+            // Will be implemented in Unit 2.2
+            console.log('Add Tool modal - to be implemented in Unit 2.2');
         }
 
         /**
@@ -859,6 +992,10 @@ const app = createApp({
             if (path === '/admin/tools') {
                 currentView.value = 'admin-tools';
                 admin.currentTab = 'tools';
+                // Fetch tools if not already loaded
+                if (admin.tools.items.length === 0) {
+                    fetchAdminTools();
+                }
                 return;
             }
 
@@ -919,7 +1056,7 @@ const app = createApp({
             if (path === '/admin/tools') {
                 currentView.value = 'admin-tools';
                 admin.currentTab = 'tools';
-                return { view: 'admin-tools' };
+                return { view: 'admin-tools', fetchAdminTools: true };
             }
 
             if (path === '/admin/users') {
@@ -1012,6 +1149,8 @@ const app = createApp({
                         fetchToolHistory(initialView.toolId);
                     } else if (initialView.view === 'tool-detail') {
                         fetchToolDetail(initialView.toolId);
+                    } else if (initialView.fetchAdminTools) {
+                        fetchAdminTools();
                     }
                 }
             });
@@ -1108,7 +1247,12 @@ const app = createApp({
             // Admin Methods
             navigateToAdminTools,
             navigateToAdminUsers,
-            switchAdminTab
+            switchAdminTab,
+            fetchAdminTools,
+            filteredAdminTools,
+            handleAdminToolSortClick,
+            getAdminToolSortClass,
+            openAddToolModal
         };
     },
 
@@ -1488,6 +1632,9 @@ const app = createApp({
                         <template v-else-if="currentView === 'admin-tools'">
                             <div class="page-header">
                                 <h1>Admin: Tool Management</h1>
+                                <p v-if="admin.tools.meta.total > 0">
+                                    {{ admin.tools.meta.active }} active, {{ admin.tools.meta.inactive }} inactive ({{ admin.tools.meta.total }} total)
+                                </p>
                             </div>
 
                             <!-- Admin Tab Navigation -->
@@ -1508,11 +1655,129 @@ const app = createApp({
                                 </button>
                             </div>
 
-                            <!-- Tools Content (placeholder for now) -->
-                            <div class="card">
-                                <div class="admin-placeholder">
-                                    <p>Tool management functionality will be implemented in Unit 2.1.</p>
-                                    <p class="admin-placeholder-hint">This view will show a table of all tools (including inactive) with search, sort, and CRUD operations.</p>
+                            <!-- Error Message -->
+                            <div v-if="admin.tools.error" class="alert alert-error">
+                                {{ admin.tools.error }}
+                                <button class="btn btn-sm btn-secondary" style="margin-left: 10px;" @click="fetchAdminTools">
+                                    Retry
+                                </button>
+                            </div>
+
+                            <!-- Toolbar: Search and Add Button -->
+                            <div class="card admin-toolbar">
+                                <div class="admin-toolbar-row">
+                                    <div class="admin-search-group">
+                                        <input
+                                            type="text"
+                                            v-model="admin.tools.search"
+                                            class="form-control admin-search-input"
+                                            placeholder="Search by tool name..."
+                                        />
+                                    </div>
+                                    <button class="btn btn-primary" @click="openAddToolModal">
+                                        Add Tool
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div v-if="admin.tools.loading" class="card" style="text-align: center; padding: 60px 20px;">
+                                <div class="loading-spinner-inline"></div>
+                                <p style="margin-top: 20px; color: #666;">Loading tools...</p>
+                            </div>
+
+                            <!-- Tools Table -->
+                            <div v-else class="card admin-table-card">
+                                <!-- Empty State -->
+                                <div v-if="filteredAdminTools.length === 0" style="text-align: center; padding: 60px 20px;">
+                                    <p style="color: #666; font-size: 1.1rem;">No tools found</p>
+                                    <p v-if="admin.tools.search.trim()" style="color: #999; font-size: 0.9rem; margin-top: 10px;">
+                                        No tools match "{{ admin.tools.search }}".
+                                        <button class="btn btn-sm btn-secondary" style="margin-left: 8px;" @click="admin.tools.search = ''">
+                                            Clear Search
+                                        </button>
+                                    </p>
+                                    <p v-else style="color: #999; font-size: 0.9rem; margin-top: 10px;">
+                                        No tools have been created yet.
+                                    </p>
+                                </div>
+
+                                <!-- Table -->
+                                <div v-else class="table-container">
+                                    <table class="table admin-tools-table">
+                                        <thead>
+                                            <tr>
+                                                <th
+                                                    class="sortable-header"
+                                                    :class="getAdminToolSortClass('name')"
+                                                    @click="handleAdminToolSortClick('name')"
+                                                    title="Sort by name"
+                                                >
+                                                    Name
+                                                    <span class="sort-indicator"></span>
+                                                </th>
+                                                <th
+                                                    class="sortable-header"
+                                                    :class="getAdminToolSortClass('area')"
+                                                    @click="handleAdminToolSortClick('area')"
+                                                    title="Sort by area"
+                                                >
+                                                    Area
+                                                    <span class="sort-indicator"></span>
+                                                </th>
+                                                <th>Bay</th>
+                                                <th
+                                                    class="sortable-header"
+                                                    :class="getAdminToolSortClass('criticality')"
+                                                    @click="handleAdminToolSortClick('criticality')"
+                                                    title="Sort by criticality"
+                                                >
+                                                    Criticality
+                                                    <span class="sort-indicator"></span>
+                                                </th>
+                                                <th>Status</th>
+                                                <th>Active</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr
+                                                v-for="tool in filteredAdminTools"
+                                                :key="tool.id"
+                                                :class="{ 'admin-row-inactive': !tool.is_active }"
+                                            >
+                                                <td class="tool-name">{{ tool.name }}</td>
+                                                <td>{{ tool.area }}</td>
+                                                <td>{{ tool.bay || '-' }}</td>
+                                                <td>
+                                                    <span class="criticality-badge" :class="'criticality-' + tool.criticality">
+                                                        {{ tool.criticality }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="status-badge" :class="tool.state_class">
+                                                        {{ tool.state_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span v-if="tool.is_active" class="active-badge active-badge-yes">Active</span>
+                                                    <span v-else class="active-badge active-badge-no">Inactive</span>
+                                                </td>
+                                                <td class="admin-actions-cell">
+                                                    <button class="btn btn-sm btn-secondary" title="Edit tool" disabled>
+                                                        Edit
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Table Footer -->
+                                <div v-if="filteredAdminTools.length > 0" class="admin-table-footer">
+                                    <span class="admin-table-count">
+                                        Showing {{ filteredAdminTools.length }} of {{ admin.tools.meta.total }} tools
+                                    </span>
                                 </div>
                             </div>
                         </template>

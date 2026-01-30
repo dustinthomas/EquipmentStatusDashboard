@@ -956,3 +956,139 @@ select option.status-down { color: #e74c3c; }
     color: #999 !important;
     font-size: 0.9rem !important;
 }
+
+/* ========================================
+   Admin Toolbar Styles
+   ======================================== */
+
+.admin-toolbar {
+    margin-bottom: 20px;
+    padding: 16px 20px;
+}
+
+.admin-toolbar-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.admin-search-group {
+    flex: 1;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+.admin-search-input {
+    width: 100%;
+}
+
+/* ========================================
+   Admin Table Styles
+   ======================================== */
+
+.admin-table-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+.admin-tools-table {
+    margin-bottom: 0;
+}
+
+.admin-tools-table th {
+    white-space: nowrap;
+}
+
+/* Inactive row styling - faded appearance */
+.admin-row-inactive {
+    opacity: 0.6;
+    background-color: rgba(128, 128, 128, 0.05);
+}
+
+.admin-row-inactive:hover {
+    opacity: 0.8;
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
+/* Admin actions cell */
+.admin-actions-cell {
+    white-space: nowrap;
+}
+
+.admin-actions-cell .btn {
+    margin-right: 4px;
+}
+
+.admin-actions-cell .btn:last-child {
+    margin-right: 0;
+}
+
+/* Admin table footer */
+.admin-table-footer {
+    padding: 12px 16px;
+    background-color: var(--qci-light-grey);
+    border-top: 1px solid #e0e0e0;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.admin-table-count {
+    font-weight: 500;
+}
+
+/* ========================================
+   Criticality Badge Styles
+   ======================================== */
+
+.criticality-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.criticality-critical {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: #c0392b;
+}
+
+.criticality-high {
+    background-color: rgba(230, 126, 34, 0.15);
+    color: #d35400;
+}
+
+.criticality-medium {
+    background-color: rgba(243, 156, 18, 0.15);
+    color: #d68910;
+}
+
+.criticality-low {
+    background-color: rgba(46, 204, 113, 0.15);
+    color: #27ae60;
+}
+
+/* ========================================
+   Active/Inactive Badge Styles
+   ======================================== */
+
+.active-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.active-badge-yes {
+    background-color: rgba(46, 204, 113, 0.15);
+    color: #27ae60;
+}
+
+.active-badge-no {
+    background-color: rgba(128, 128, 128, 0.15);
+    color: #666;
+}

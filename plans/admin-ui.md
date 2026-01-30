@@ -68,7 +68,7 @@ const admin = reactive({
 - Set up admin view routing and basic navigation with tabs
 
 ### Milestone 2: Tool Management UI
-- **Status:** Not Started
+- **Status:** In Progress
 - **Units:** 2.1, 2.2
 - Tool list table with CRUD modals
 
