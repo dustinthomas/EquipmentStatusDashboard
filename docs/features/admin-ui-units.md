@@ -42,22 +42,23 @@ Set up admin view routing in Vue app and update server routes to serve the Vue a
 ## Milestone 2: Tool Management UI
 
 ### Unit 2.1: Tool List Table
-**Status:** PENDING
+**Status:** VERIFIED
 **Branch:** `feature/admin-tools-list`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/37
 **Depends on:** 1.1
 
 **Task:**
 Implement admin tool list table showing all tools (including inactive). Include search/filter, sorting, and visual distinction for inactive tools.
 
 **Acceptance Criteria:**
-- [ ] Admin tools view fetches from `GET /api/admin/tools` on mount
-- [ ] Table displays: name, area, bay, criticality, current state, active/inactive badge
-- [ ] Inactive tools show faded row style and "Inactive" badge
-- [ ] Search input filters by tool name
-- [ ] Column headers clickable for sorting (name, area, criticality)
-- [ ] Loading spinner shown during fetch
-- [ ] Error message displayed if fetch fails
-- [ ] "Add Tool" button visible (opens modal in next unit)
+- [x] Admin tools view fetches from `GET /api/admin/tools` on mount
+- [x] Table displays: name, area, bay, criticality, current state, active/inactive badge
+- [x] Inactive tools show faded row style and "Inactive" badge
+- [x] Search input filters by tool name
+- [x] Column headers clickable for sorting (name, area, criticality)
+- [x] Loading spinner shown during fetch
+- [x] Error message displayed if fetch fails
+- [x] "Add Tool" button visible (opens modal in next unit)
 
 **Files to modify:**
 - `public/js/app.js` - Add admin.tools state, fetchAdminTools(), tool list template

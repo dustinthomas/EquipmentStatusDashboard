@@ -38,7 +38,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
 
         dockerfile_content = read(dockerfile_path, String)
         # Uses official Julia image
-        @test occursin("FROM julia:1.10", dockerfile_content)
+        @test occursin("FROM julia:1.12", dockerfile_content)
         # Runs Pkg.instantiate()
         @test occursin("Pkg.instantiate()", dockerfile_content)
         # Runs precompile
@@ -140,7 +140,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
 
     @testset "Database Configuration" begin
         # Use a temp file for testing
-        test_db_path = joinpath(tempdir(), "test_qci_$(rand(UInt32)).sqlite")
+        test_db_path = joinpath(tempdir(), "test_qci_$(time_ns())_$(rand(UInt32)).sqlite")
         ENV["DATABASE_PATH"] = test_db_path
 
         # Include database configuration
@@ -204,7 +204,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
     @testset "Models" begin
         @testset "User Model" begin
             # Use a temp file for model testing
-            test_db_path = joinpath(tempdir(), "test_user_model_$(rand(UInt32)).sqlite")
+            test_db_path = joinpath(tempdir(), "test_user_model_$(time_ns())_$(rand(UInt32)).sqlite")
             ENV["DATABASE_PATH"] = test_db_path
 
             # Include database configuration and connect
@@ -216,7 +216,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             using .Users: User, VALID_ROLES, validate_role, is_admin, find_by_username
 
             # Run migration to create users table
-            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122195602_create_users.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "2026012219560200_create_users.jl"))
             CreateUsers.up()
 
             @testset "Role validation" begin
@@ -306,7 +306,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
 
         @testset "Tool Model" begin
             # Use a temp file for model testing
-            test_db_path = joinpath(tempdir(), "test_tool_model_$(rand(UInt32)).sqlite")
+            test_db_path = joinpath(tempdir(), "test_tool_model_$(time_ns())_$(rand(UInt32)).sqlite")
             ENV["DATABASE_PATH"] = test_db_path
 
             # Include database configuration and connect
@@ -319,7 +319,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                           find_active_tools, find_by_area, find_down_tools
 
             # Run migration to create tools table
-            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122201046_create_tools.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "2026012220104600_create_tools.jl"))
             CreateTools.up()
 
             @testset "State validation" begin
@@ -473,7 +473,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
 
         @testset "StatusEvent Model" begin
             # Use a temp file for model testing
-            test_db_path = joinpath(tempdir(), "test_status_event_model_$(rand(UInt32)).sqlite")
+            test_db_path = joinpath(tempdir(), "test_status_event_model_$(time_ns())_$(rand(UInt32)).sqlite")
             ENV["DATABASE_PATH"] = test_db_path
 
             # Include database configuration and connect
@@ -491,9 +491,9 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                                  create_status_event!
 
             # Run migrations to create all tables
-            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122195602_create_users.jl"))
-            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122201046_create_tools.jl"))
-            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122203749_create_status_events.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "2026012219560200_create_users.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "2026012220104600_create_tools.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "2026012220374900_create_status_events.jl"))
             CreateUsers.up()
             CreateTools.up()
             CreateStatusEvents.up()
@@ -678,7 +678,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
 
         @testset "Seed Data" begin
             # Use a temp file for seed testing
-            test_db_path = joinpath(tempdir(), "test_seed_$(rand(UInt32)).sqlite")
+            test_db_path = joinpath(tempdir(), "test_seed_$(time_ns())_$(rand(UInt32)).sqlite")
             ENV["DATABASE_PATH"] = test_db_path
 
             # Include database configuration and connect
@@ -686,9 +686,9 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             @test connect_database() == true
 
             # Run migrations to create all tables
-            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122195602_create_users.jl"))
-            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122201046_create_tools.jl"))
-            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122203749_create_status_events.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "2026012219560200_create_users.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "2026012220104600_create_tools.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "2026012220374900_create_status_events.jl"))
             CreateUsers.up()
             CreateTools.up()
             CreateStatusEvents.up()
@@ -973,7 +973,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
 
             @testset "Filter and sort functions" begin
                 # Use a temp file for filter/sort testing
-                test_db_path = joinpath(tempdir(), "test_filter_sort_$(rand(UInt32)).sqlite")
+                test_db_path = joinpath(tempdir(), "test_filter_sort_$(time_ns())_$(rand(UInt32)).sqlite")
                 ENV["DATABASE_PATH"] = test_db_path
 
                 # Include database configuration and connect
@@ -983,7 +983,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
                 # Include the Tool model and run migration
                 include(joinpath(@__DIR__, "..", "src", "models", "Tool.jl"))
                 using .Tools: Tool, VALID_STATES
-                include(joinpath(@__DIR__, "..", "db", "migrations", "20260122201046_create_tools.jl"))
+                include(joinpath(@__DIR__, "..", "db", "migrations", "2026012220104600_create_tools.jl"))
                 CreateTools.up()
 
                 # Define filter/sort functions locally for testing
@@ -1722,7 +1722,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
 
         @testset "User Authentication" begin
             # Use a temp file for auth testing
-            test_db_path = joinpath(tempdir(), "test_auth_$(rand(UInt32)).sqlite")
+            test_db_path = joinpath(tempdir(), "test_auth_$(time_ns())_$(rand(UInt32)).sqlite")
             ENV["DATABASE_PATH"] = test_db_path
 
             # Include database configuration and connect
@@ -1730,7 +1730,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
             @test connect_database() == true
 
             # Run user migration
-            include(joinpath(@__DIR__, "..", "db", "migrations", "20260122195602_create_users.jl"))
+            include(joinpath(@__DIR__, "..", "db", "migrations", "2026012219560200_create_users.jl"))
             CreateUsers.up()
 
             # Include models and auth core
@@ -2201,7 +2201,7 @@ ENV["SEARCHLIGHT_ENV"] = "test"
 
             # Test Admin link only shown to admins
             @test occursin("v-if=\"isAdmin\"", app_js_content)
-            @test occursin("href=\"/admin\"", app_js_content)
+            @test occursin("href=\"/admin/tools\"", app_js_content)
         end
     end
 
