@@ -67,8 +67,9 @@ Implement admin tool list table showing all tools (including inactive). Include 
 ---
 
 ### Unit 2.2: Tool Create/Edit/Toggle Modals
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/admin-tools-crud`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/38
 **Depends on:** 2.1
 
 **Task:**
@@ -97,7 +98,7 @@ Implement modal forms for creating and editing tools, plus toggle active functio
 ## Milestone 3: User Management UI
 
 ### Unit 3.1: User List Table
-**Status:** PENDING
+**Status:** IMPLEMENTED
 **Branch:** `feature/admin-users-list`
 **Depends on:** 1.1
 
@@ -105,15 +106,15 @@ Implement modal forms for creating and editing tools, plus toggle active functio
 Implement admin user list table showing all users (including inactive). Include search and visual distinction for inactive users.
 
 **Acceptance Criteria:**
-- [ ] Admin users view fetches from `GET /api/admin/users` on mount
-- [ ] Table displays: username, name, role, last login (formatted), active/inactive badge
-- [ ] Inactive users show faded row style and "Inactive" badge
-- [ ] Role shown as badge (admin = primary color, operator = secondary)
-- [ ] Search input filters by username or name
-- [ ] Column headers clickable for sorting (username, name, role, last login)
-- [ ] Loading spinner shown during fetch
-- [ ] Error message displayed if fetch fails
-- [ ] "Add User" button visible (opens modal in next unit)
+- [x] Admin users view fetches from `GET /api/admin/users` on mount
+- [x] Table displays: username, name, role, last login (formatted), active/inactive badge
+- [x] Inactive users show faded row style and "Inactive" badge
+- [x] Role shown as badge (admin = primary color, operator = secondary)
+- [x] Search input filters by username or name
+- [x] Column headers clickable for sorting (username, name, role, last login)
+- [x] Loading spinner shown during fetch
+- [x] Error message displayed if fetch fails
+- [x] "Add User" button visible (opens modal in next unit)
 
 **Files to modify:**
 - `public/js/app.js` - Add admin.users state, fetchAdminUsers(), user list template
