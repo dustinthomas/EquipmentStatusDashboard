@@ -531,7 +531,7 @@ Highlight tools whose status hasn't been updated in configurable time (default 8
 ---
 
 ### Unit 6.3: Dockerfile and Docker Compose
-**Status:** IMPLEMENTED
+**Status:** VERIFIED
 **Branch:** `feature/docker`
 **Depends on:** All previous units
 
