@@ -1,0 +1,48 @@
+# QCI Equipment Status Dashboard - Docker Compose Configuration
+# For local testing and development
+#
+# Usage:
+#   docker-compose up -d        # Start in background
+#   docker-compose logs -f      # Follow logs
+#   docker-compose down         # Stop and remove containers
+#   docker-compose down -v      # Stop and remove containers AND volumes (deletes data!)
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: qci-status-dashboard
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      # Persist SQLite database
+      - qci-data:/data
+    environment:
+      # Server configuration
+      - PORT=8000
+      - GENIE_ENV=prod
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
+      # Database path (inside container)
+      - DATABASE_PATH=/data/qci_status.sqlite
+
+      # Session encryption key (CHANGE THIS IN PRODUCTION!)
+      # Generate with: openssl rand -hex 32
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+
+      # Stale status highlighting threshold
+      - STALE_THRESHOLD_HOURS=${STALE_THRESHOLD_HOURS:-8}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  qci-data:
+    driver: local
