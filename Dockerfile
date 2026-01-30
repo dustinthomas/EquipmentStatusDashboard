@@ -41,6 +41,7 @@ RUN mkdir -p /data && chmod 755 /data
 ENV PORT=8000
 ENV DATABASE_PATH=/data/qci_status.sqlite
 ENV GENIE_ENV=prod
+ENV GENIE_HOST=0.0.0.0
 ENV LOG_LEVEL=info
 # SECRET_KEY must be provided at runtime for session encryption
 ENV SECRET_KEY=""
@@ -54,7 +55,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${PORT}/health || exit 1
 
-# Start the application
-# Note: Using src/App.jl directly (not app.jl) for proper module loading
-# host="0.0.0.0" is required for Docker to accept connections from outside the container
-CMD ["julia", "--project=.", "-e", "include(\"src/App.jl\"); using .App; App.up(parse(Int, ENV[\"PORT\"]); host=\"0.0.0.0\")"]
+# Start the application using startup.jl
+# This script handles: migrations, admin seeding, and server startup
+# host="0.0.0.0" is set via GENIE_HOST env var and in startup.jl
+CMD ["julia", "--project=.", "startup.jl"]

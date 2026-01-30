@@ -42,3 +42,7 @@ Thumbs.db
 # Temporary
 tmp/
 temp/
+
+# Session/local files
+cookies.txt
+.claude/settings.local.json
