@@ -98,8 +98,9 @@ Implement modal forms for creating and editing tools, plus toggle active functio
 ## Milestone 3: User Management UI
 
 ### Unit 3.1: User List Table
-**Status:** IMPLEMENTED
+**Status:** MERGED
 **Branch:** `feature/admin-users-list`
+**PR:** https://github.com/dustinthomas/EquipmentStatusDashboard/pull/39
 **Depends on:** 1.1
 
 **Task:**
